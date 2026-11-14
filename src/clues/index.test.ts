@@ -41,6 +41,14 @@ test("nextQuestion skips questions that cannot split, and returns null when none
   expect(nextQuestion(sampleCatalog, [], [keepsAll, oneLive, fall])).toBe(fall);
 });
 
+test("nextQuestion skips a question that leaves some suspect with no option to pick", () => {
+  // T2M and TS match neither option, so asking this now would strand them (architecture 7.3).
+  const wet = q("wet", ["rain"], ["humidity"]);
+  expect(nextQuestion(sampleCatalog, [], [sphere, feel, wet])).toBe(feel);
+  const waterOnly = sampleCatalog.filter((v) => v.tags.includes("water"));
+  expect(nextQuestion(waterOnly, ["sphere", "feel"], [sphere, feel, wet])).toBe(wet);
+});
+
 test("nextQuestion picks the smallest worst-case group on a 4-variable fixture", () => {
   expect(nextQuestion(sampleCatalog, [], [sphere, feel, fall])).toBe(feel);
 });
