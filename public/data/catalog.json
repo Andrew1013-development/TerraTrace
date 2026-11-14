@@ -10,6 +10,36 @@
     "tags": ["air", "temperature", "average"]
   },
   {
+    "id": "T2M_MAX",
+    "name": "daily high temperature",
+    "definition": "The warmest the air gets each day, about two metres above the ground, averaged over the month.",
+    "unit": "°C",
+    "source": "NASA POWER monthly (MERRA-2), API v2.10.0",
+    "powerParameter": "T2M_MAX",
+    "startYear": 1981,
+    "tags": ["air", "temperature", "maximum"]
+  },
+  {
+    "id": "T2M_MIN",
+    "name": "daily low temperature",
+    "definition": "The coolest the air gets each day, about two metres above the ground, averaged over the month.",
+    "unit": "°C",
+    "source": "NASA POWER monthly (MERRA-2), API v2.10.0",
+    "powerParameter": "T2M_MIN",
+    "startYear": 1981,
+    "tags": ["air", "temperature", "minimum"]
+  },
+  {
+    "id": "TS",
+    "name": "ground surface temperature",
+    "definition": "How warm the very surface of the land or sea is, averaged over the month.",
+    "unit": "°C",
+    "source": "NASA POWER monthly (MERRA-2), API v2.10.0",
+    "powerParameter": "TS",
+    "startYear": 1981,
+    "tags": ["land", "temperature"]
+  },
+  {
     "id": "PRECTOTCORR",
     "name": "precipitation",
     "definition": "How much rain and snow falls, as the average depth of water per day over the month.",
@@ -18,5 +48,55 @@
     "powerParameter": "PRECTOTCORR",
     "startYear": 1981,
     "tags": ["air", "water", "rain"]
+  },
+  {
+    "id": "PRECSNO",
+    "name": "snowfall",
+    "definition": "How much snow falls, as the depth of water it would melt into per day, averaged over the month.",
+    "unit": "mm/day",
+    "source": "NASA POWER monthly (MERRA-2), API v2.10.0",
+    "powerParameter": "PRECSNO",
+    "startYear": 1981,
+    "tags": ["air", "water", "snow"]
+  },
+  {
+    "id": "RH2M",
+    "name": "relative humidity",
+    "definition": "How close the air is to holding all the water vapour it can, as a percentage, averaged over the month.",
+    "unit": "%",
+    "source": "NASA POWER monthly (MERRA-2), API v2.10.0",
+    "powerParameter": "RH2M",
+    "startYear": 1981,
+    "tags": ["air", "water", "humidity"]
+  },
+  {
+    "id": "WS2M",
+    "name": "wind speed",
+    "definition": "How fast the wind blows about two metres above the ground, averaged over the month.",
+    "unit": "m/s",
+    "source": "NASA POWER monthly (MERRA-2), API v2.10.0",
+    "powerParameter": "WS2M",
+    "startYear": 1981,
+    "tags": ["air", "wind"]
+  },
+  {
+    "id": "ALLSKY_SFC_SW_DWN",
+    "name": "sunlight at the ground",
+    "definition": "How much energy from sunlight reaches the ground each day, cloudy days included, averaged over the month.",
+    "unit": "MJ/m²/day",
+    "source": "NASA POWER monthly (CERES SYN1deg), API v2.10.0",
+    "powerParameter": "ALLSKY_SFC_SW_DWN",
+    "startYear": 2001,
+    "tags": ["air", "sun"]
+  },
+  {
+    "id": "CLOUD_AMT",
+    "name": "cloud cover",
+    "definition": "How much of the sky is covered by cloud, as a percentage, averaged over the month.",
+    "unit": "%",
+    "source": "NASA POWER monthly (CERES SYN1deg), API v2.10.0",
+    "powerParameter": "CLOUD_AMT",
+    "startYear": 2001,
+    "tags": ["air", "cloud"]
   }
 ]

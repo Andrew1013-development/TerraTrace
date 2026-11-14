@@ -102,4 +102,19 @@ export function getSeries(variable: Variable, place: Place): Promise<Series> {
   );
 }
 
-export const demoCases: DemoCase[] = [];
+// The two cases chosen in Task B6 (issue 17). Both are regions, whose series are static
+// files, so they need no snapshot or POWER fallback (card A7).
+export const demoCases: DemoCase[] = [
+  {
+    id: "arctic-precipitation",
+    title: "Is the Arctic getting wetter?",
+    variableId: "PRECTOTCORR",
+    place: { kind: "region", id: "arctic-canada" },
+  },
+  {
+    id: "tibet-temperature",
+    title: "Is the Tibetan Plateau warming?",
+    variableId: "T2M",
+    place: { kind: "region", id: "tibetan-plateau" },
+  },
+];

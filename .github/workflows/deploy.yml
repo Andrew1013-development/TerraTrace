@@ -24,6 +24,8 @@ jobs:
           node-version: 26
           cache: npm
       - run: npm ci
+      # A main that fails the tests, including the pipeline test, is never published.
+      - run: npx vitest run
       - run: npm run build
       - uses: actions/configure-pages@v6
       - uses: actions/upload-pages-artifact@v5
