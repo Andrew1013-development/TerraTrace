@@ -1,29 +1,18 @@
 import { beforeEach, expect, test, vi } from "vitest";
 import catalogJson from "../../public/data/catalog.json";
 import regionsJson from "../../public/data/regions.json";
-import type { Region, Series, Variable } from "../types";
+import type { Region, Variable } from "../types";
+import { stubFetch } from "./testFetch";
 
 const catalog = catalogJson as Variable[];
 const regions = regionsJson as unknown as Region[];
-// Series files read from disk, keyed by "{variableId}/{regionId}".
-const seriesFiles = Object.fromEntries(
-  Object.entries(import.meta.glob<Series>("../../public/data/series/*/*.json", { eager: true, import: "default" }))
-    .map(([path, s]) => [path.split("/series/")[1].replace(".json", ""), s]),
-);
 
 let data: typeof import("./index");
-let fetchMock: ReturnType<typeof vi.fn>;
+let fetchMock: ReturnType<typeof stubFetch>;
 
 // POWER is unreachable in every test here: only our own static files answer.
 beforeEach(async () => {
-  fetchMock = vi.fn(async (url: string) => {
-    if (url.includes("power.larc.nasa.gov")) throw new TypeError("Failed to fetch");
-    const key = url.split("/data/series/")[1]?.replace(".json", "");
-    return key && seriesFiles[key]
-      ? new Response(JSON.stringify(seriesFiles[key]))
-      : new Response("not found", { status: 404 });
-  });
-  vi.stubGlobal("fetch", fetchMock);
+  fetchMock = stubFetch("down");
   vi.resetModules();
   data = await import("./index");
 });
