@@ -1,4 +1,5 @@
 import { useEffect, useReducer } from 'react'
+import { getSeries, type DataError } from './data'
 import { sampleCatalog, sampleRegions } from './fixtures'
 import type { DemoCase, Hunch, Place, Series, Variable } from './types'
 import { CaseBrief } from './ui/CaseBrief'
@@ -7,8 +8,6 @@ import { Evidence } from './ui/Evidence'
 import { PlacePicker } from './ui/PlacePicker'
 import { Shell } from './ui/Shell'
 import { VerdictView } from './ui/VerdictView'
-// shortcut: temporary loader until Task A2 merges; switch this import to './data' then.
-import { getSeries } from './ui/tempSeries'
 import './styles/app.css'
 
 export type Screen = 'clues' | 'scene' | 'brief' | 'evidence' | 'verdict'
@@ -19,8 +18,7 @@ export type CaseState = {
   place?: Place
   hunch?: Hunch
   deseasonalized: boolean
-  // shortcut: error is a plain Error until Task A2 exports DataError; switch the type then.
-  load: { status: 'idle' | 'loading' | 'ready' | 'error'; series?: Series; error?: Error }
+  load: { status: 'idle' | 'loading' | 'ready' | 'error'; series?: Series; error?: DataError }
 }
 
 export type CaseEvent =
@@ -33,7 +31,7 @@ export type CaseEvent =
   | { type: 'restart' }
   | { type: 'toggle' }
   | { type: 'loaded'; variable: Variable; place: Place; series: Series }
-  | { type: 'failed'; variable: Variable; place: Place; error: Error }
+  | { type: 'failed'; variable: Variable; place: Place; error: DataError }
 
 export const initialState: CaseState = { screen: 'clues', deseasonalized: true, load: { status: 'idle' } }
 
@@ -96,7 +94,7 @@ export default function App() {
     if (!loading || !variable || !place) return
     getSeries(variable, place).then(
       (series) => dispatch({ type: 'loaded', variable, place, series }),
-      (error: Error) => dispatch({ type: 'failed', variable, place, error }),
+      (error: DataError) => dispatch({ type: 'failed', variable, place, error }),
     )
   }, [loading, variable, place])
 

@@ -9,7 +9,7 @@ vi.mock('./stats', () => ({
   deseasonalize: vi.fn(() => []),
 }))
 vi.mock('./ui/Chart', () => ({ Chart: () => <figure aria-label="chart" /> }))
-vi.mock('./ui/tempSeries', () => ({ getSeries: vi.fn(() => Promise.resolve(sampleSeries)) }))
+vi.mock('./data', () => ({ getSeries: vi.fn(() => Promise.resolve(sampleSeries)) }))
 
 const stepFor: Record<string, string> = {
   'Gather the clues': 'Clues',
