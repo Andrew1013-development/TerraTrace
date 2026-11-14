@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react'
-import { loadCountries, type Countries } from '../data'
+import { loadCountries, loadRegionShapes, type Countries, type RegionShapes } from '../data'
 import { countryAt, leadsFor, listName, parsePoint, placeName, regionAt } from '../place'
 import type { Lead, Place, Region, Variable } from '../types'
 import { GlobeIcon, PinIcon } from './icons'
@@ -30,16 +30,26 @@ export function PlacePicker({ variable, regions, leads, place, onPick }: PlacePi
   const [lon, setLon] = useState(place?.kind === 'point' ? String(place.lon) : '')
   const [invalid, setInvalid] = useState(false)
   const [countries, setCountries] = useState<Countries | null>() // null: the file failed to load
+  // The outlines the globe draws; a typed point is in a region when it is inside that outline (boxes until loaded).
+  const [shapes, setShapes] = useState<RegionShapes>()
   // The map follows whichever the user touched last: the region list, or the typed point.
   const [mode, setMode] = useState<'region' | 'point'>(place?.kind === 'point' ? 'point' : 'region')
 
   const pointsAllowed = variable.powerParameter !== null
   const typed = pointsAllowed ? parsePoint(lat, lon) : null
   const point = typed?.kind === 'point' ? typed : undefined
-  const pointRegion = point ? regionAt(point.lat, point.lon, regions) : undefined
+  const pointRegion = point ? regionAt(point.lat, point.lon, regions, shapes) : undefined
   const listRegion = regions.find((r) => r.id === regionId)
   const shown = mode === 'point' ? pointRegion : listRegion
   const regionLeads = shown ? leadsFor(leads, shown.id, variable.id) : []
+
+  useEffect(() => {
+    let live = true
+    loadRegionShapes().then((s) => live && setShapes(s), () => {}) // cached by src/data; without it, boxes are used
+    return () => {
+      live = false
+    }
+  }, [])
 
   // Country names are only needed for a point outside every region; load them then (cached by src/data).
   useEffect(() => {
@@ -49,19 +59,19 @@ export function PlacePicker({ variable, regions, leads, place, onPick }: PlacePi
   const caption =
     mode === 'point' && point
       ? pointRegion
-        ? `This point is inside ${pointRegion.name}, so the case uses the data for ${pointRegion.name}.`
+        ? `This point is inside ${pointRegion.name}, so the case uses the data for ${pointRegion.name}: an average of 9 points sampled inside the region, which may not include this exact spot.`
         : `This point is outside the prepared regions, so the case uses live data for ${
             spotName(point.lat, point.lon, countries) ?? placeName(point, regions)
           }.`
       : listRegion
-        ? `Highlighted: ${listRegion.name}. The case averages 9 sampled points across this region.`
+        ? `Highlighted: ${listRegion.name}. The case uses an average of 9 points sampled inside this region.`
         : 'Pick a region, or type coordinates, to see it on the map.'
 
   const submitPoint = async (e: FormEvent) => {
     e.preventDefault()
     const p = parsePoint(lat, lon)
     if (!p || p.kind !== 'point') return setInvalid(true)
-    const inside = regionAt(p.lat, p.lon, regions)
+    const inside = regionAt(p.lat, p.lon, regions, shapes ?? (await loadRegionShapes().catch(() => undefined)))
     if (inside) return onPick({ kind: 'region', id: inside.id })
     // A failed load is tried once more here, in case the connection is back.
     const name = spotName(p.lat, p.lon, countries || (await loadCountries().catch(() => null)))

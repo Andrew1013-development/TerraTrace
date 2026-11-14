@@ -276,14 +276,14 @@ async function makeGlobe(host: HTMLDivElement, onPick: (lat: number, lon: number
 export function WorldMap({ regions, highlight, pin, label, onRegion }: WorldMapProps) {
   const ref = useRef<HTMLDivElement>(null)
   const globe = useRef<Globe | undefined>(undefined)
-  const latest = useRef({ regions, onRegion })
+  const latest = useRef<{ regions: Region[]; onRegion?: (id: string) => void; shapes?: RegionShapes }>({ regions, onRegion })
   const [ready, setReady] = useState(false)
   const [failed, setFailed] = useState(() => !hasWebGL())
   const [shapes, setShapes] = useState<RegionShapes>()
 
   useEffect(() => {
-    latest.current = { regions, onRegion }
-  }, [regions, onRegion])
+    latest.current = { regions, onRegion, shapes }
+  }, [regions, onRegion, shapes])
 
   useEffect(() => {
     let live = true
@@ -301,7 +301,8 @@ export function WorldMap({ regions, highlight, pin, label, onRegion }: WorldMapP
     let live = true
     let made: Globe | undefined
     makeGlobe(ref.current, (lat, lon) => {
-      const r = regionAt(lat, lon, latest.current.regions)
+      // Inside the drawn outline, not the box, so a click anywhere inside the dashed line picks that region.
+      const r = regionAt(lat, lon, latest.current.regions, latest.current.shapes)
       if (r) latest.current.onRegion?.(r.id)
     }).then(
       (g) => {
