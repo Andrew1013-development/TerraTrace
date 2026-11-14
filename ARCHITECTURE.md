@@ -158,12 +158,15 @@ export function mannKendallP(y: number[]): number;
 export function seasonalMannKendallP(y: number[], months: number[]): number;
 export function olsSlopeCi(t: number[], y: number[]): [number, number];
 export function analyze(series: Series, deseasonalized: boolean): TrendResult | null;
+export function selectableYears(series: Series): number[];
+export function validPeriod(series: Series, start: number, end: number): boolean;
+export function slicePeriod(series: Series, start: number, end: number): Series;
 ```
 
 ### 4.6 Verdict (`src/verdict/index.ts`, Dev B)
 
 ```ts
-export function getVerdict(result: TrendResult, variable: Variable, place: string): Verdict;
+export function getVerdict(result: TrendResult, variable: Variable, place: string, years?: [number, number]): Verdict;
 export function hunchLine(hunch: Hunch, verdict: Verdict): string;
 export function oppositeDirections(a: Verdict, b: Verdict): boolean;
 export function formatNumber(x: number, signed?: boolean): string;

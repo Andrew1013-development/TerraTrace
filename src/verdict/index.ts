@@ -24,7 +24,13 @@ export function formatNumber(x: number, signed = false): string {
 
 const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
-export function getVerdict(result: TrendResult, variable: Variable, place: string): Verdict {
+// years (issue 46): when given, the sentence begins "From {start} to {end}, ". Stub: not used yet.
+export function getVerdict(
+  result: TrendResult,
+  variable: Variable,
+  place: string,
+  _years?: [number, number],
+): Verdict {
   const { mkP, ci95: [lo, hi], slopePerDecade: slope } = result;
   const significant = mkP < ALPHA;
   const above = lo > 0 && hi > 0;

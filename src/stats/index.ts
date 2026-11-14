@@ -146,3 +146,20 @@ export function analyze(series: Series, deseasonalized: boolean): TrendResult | 
     deseasonalized,
   };
 }
+
+// Custom period (issue 46). Whole years only; the record is cut on the client, never refetched.
+
+// Years that can start or end a period: all 12 months present with a value. Ascending.
+export function selectableYears(_series: Series): number[] {
+  throw new Error("not implemented");
+}
+
+// True only when start and end are both selectable years and end - start + 1 >= 10.
+export function validPeriod(_series: Series, _start: number, _end: number): boolean {
+  throw new Error("not implemented");
+}
+
+// The months from start-01 to end-12, inclusive; every other field unchanged. Callers check validPeriod first.
+export function slicePeriod(_series: Series, _start: number, _end: number): Series {
+  throw new Error("not implemented");
+}
