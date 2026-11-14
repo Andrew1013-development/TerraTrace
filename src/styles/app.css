@@ -106,6 +106,8 @@ a {
   outline: 3px solid var(--neon-blue);
   outline-offset: 2px;
 }
+/* Headings get focus only so screen readers announce a new screen; they are not controls. */
+h1[tabindex="-1"]:focus { outline: none; }
 
 /* Hover and current-step underline: a 2px line that slides in from the left. */
 .underline {
@@ -125,6 +127,50 @@ a {
 }
 .underline-yellow::after { background: var(--yellow); }
 .underline-red::after { background: var(--red); }
+
+/* Buttons. Primary labels are 19px bold: white on the Rocket Red hover is 4.37:1, so they must be large text. */
+button {
+  font: inherit;
+  min-height: 44px;
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius);
+  cursor: pointer;
+  background: var(--white);
+  color: var(--electric-blue);
+  border: 2px solid var(--electric-blue);
+}
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-family: var(--font-head);
+  font-weight: 700;
+  font-size: var(--text-button);
+  background: var(--neon-blue);
+  color: var(--white);
+  border-color: var(--neon-blue);
+  transition: background-color var(--fast) var(--ease), border-color var(--fast) var(--ease);
+}
+.btn-primary:hover:not(:disabled) {
+  background: var(--red-hover);
+  border-color: var(--red-hover);
+}
+.btn-primary:disabled {
+  cursor: not-allowed;
+  background: var(--tile);
+  color: var(--muted);
+  border-color: var(--line);
+}
+
+.star {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 1000;
+  line-height: 1;
+  pointer-events: none;
+  will-change: transform, opacity;
+}
 
 /* Shell: rail beside the main panel on wide screens, a top strip on narrow ones. */
 .shell {
