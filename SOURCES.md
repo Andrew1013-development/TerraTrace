@@ -4,7 +4,11 @@ Every dataset, library and other source used by this project. Add a row when a t
 
 ## Datasets
 
-None yet. Each dataset is added, with its product name, provider, URL and date accessed, by the task that first uses it.
+Each dataset is added, with its product name, provider, URL and date accessed, by the task that first uses it.
+
+| Product | Provider | URL | Accessed |
+|---|---|---|---|
+| NASA POWER Monthly and Annual API v2.10.0, point data, `community=AG`. `T2M` and `PRECTOTCORR` come from MERRA-2 | NASA Langley Research Center, POWER project | https://power.larc.nasa.gov/ | 2026-11-14 |
 
 ## Libraries
 
