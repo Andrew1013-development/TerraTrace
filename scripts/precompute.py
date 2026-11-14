@@ -52,7 +52,7 @@ def _monthly(body, param):
     raw = body["properties"]["parameter"][param]
     fill = body.get("header", {}).get("fill_value", -999.0)
     return {
-        f"{k[:4]}-{k[4:]}": (v if isinstance(v, (int, float)) and math.isfinite(v) and v != fill else None)
+        f"{k[:4]}-{k[4:]}": (v if isinstance(v, (int, float)) and not isinstance(v, bool) and math.isfinite(v) and v != fill else None)
         for k, v in raw.items()
         if MONTH_KEY.match(k)
     }
@@ -105,7 +105,8 @@ def make_fetch(catalog):
     def fetch(lat, lon, variable):
         start = variable["startYear"]
         params = sorted(v["powerParameter"] for v in catalog if v["powerParameter"] and v["startYear"] == start)
-        path = CACHE / f"{lat}_{lon}_{start}_{'-'.join(params)}.json"
+        # The end year is part of the name, so a longer record is never served from an old cache (D5).
+        path = CACHE / f"{lat}_{lon}_{start}-{END_YEAR}_{'-'.join(params)}.json"
         if path.exists():
             return json.loads(path.read_text("utf-8"))
         url = (f"{POWER_URL}?parameters={','.join(params)}&community=AG"

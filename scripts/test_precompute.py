@@ -88,3 +88,22 @@ def test_get_json_stops_after_5_tries_with_a_clear_error():
     with pytest.raises(RuntimeError, match="429"):
         precompute.get_json("u", get=lambda url, timeout: FakeResponse(429), sleep=waits.append)
     assert waits == [30, 60, 120, 120]
+
+
+def test_cache_name_includes_the_end_year(tmp_path, monkeypatch):  # D5
+    monkeypatch.setattr(precompute, "CACHE", tmp_path)
+    monkeypatch.setattr(precompute.time, "sleep", lambda s: None)
+    urls = []
+    monkeypatch.setattr(precompute, "get_json", lambda url: urls.append(url) or power_response({"202001": 1.0}))
+    fetch = precompute.make_fetch([T2M])
+    fetch(1.0, 2.0, T2M)
+    fetch(1.0, 2.0, T2M)
+    assert len(urls) == 1  # the second call is served from the cache
+    monkeypatch.setattr(precompute, "END_YEAR", 2026)
+    fetch(1.0, 2.0, T2M)
+    assert len(urls) == 2 and "end=2026" in urls[-1]
+
+
+def test_booleans_are_not_measurements():  # D10: in Python, True is an int
+    s = region_series(T2M, REGION, lambda lat, lon, v: power_response({"202001": True, "202002": 2.0}))
+    assert s["values"] == [None, 2.0]
