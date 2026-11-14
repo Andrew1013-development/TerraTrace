@@ -147,3 +147,15 @@ test("a coordinate just below zero rounds to 0.00, not -0.00 (D8)", async () => 
   expect(String(fetchMock.mock.calls[0][0])).toContain("longitude=0.00&latitude=0.00");
   expect(fetchMock).toHaveBeenCalledTimes(1);
 });
+
+test("requests still work on browsers without AbortSignal.timeout (Safari before 16)", async () => {
+  const original = AbortSignal.timeout;
+  // @ts-expect-error: simulating an older browser
+  AbortSignal.timeout = undefined;
+  try {
+    await expect(data.getSeries(t2m, point)).resolves.toMatchObject({ variableId: "T2M" });
+    expect(fetchMock.mock.calls[0][1]?.signal).toBeUndefined();
+  } finally {
+    AbortSignal.timeout = original;
+  }
+});

@@ -57,7 +57,9 @@ async function fetchJson(url: string): Promise<unknown> {
   let res: Response;
   try {
     // A stalled connection would otherwise leave the screen loading forever (D2).
-    res = await fetch(url, { signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) });
+    // AbortSignal.timeout is missing before Safari 16 / Chrome 103: fetch without a limit there.
+    const signal = typeof AbortSignal.timeout === "function" ? AbortSignal.timeout(FETCH_TIMEOUT_MS) : undefined;
+    res = await fetch(url, { signal });
   } catch {
     throw new DataError("network");
   }
