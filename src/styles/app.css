@@ -186,6 +186,99 @@ button {
   margin-top: var(--space-5);
 }
 
+/* Clues: question card and suspect list side by side on wide screens, solved cases below. */
+.clues-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-4);
+}
+.question {
+  border: 0;
+  margin: 0;
+  padding: 0;
+}
+.question legend,
+.question-text {
+  font-family: var(--font-head);
+  font-weight: 700;
+  font-size: var(--text-lg);
+  padding: 0;
+  margin: 0 0 var(--space-4);
+}
+.options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+.options button { transition: background-color var(--fast) var(--ease); }
+.options button:hover { background: var(--tile); }
+.eyebrow {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--muted);
+}
+.solved-name {
+  margin: var(--space-1) 0 var(--space-2);
+  font-family: var(--font-head);
+  font-weight: 700;
+  font-size: var(--text-xl);
+  color: var(--electric-blue);
+}
+.link-button {
+  margin-top: var(--space-4);
+  border: 0;
+  padding: 0;
+  min-height: 44px;
+  background: none;
+  color: var(--electric-blue);
+  text-decoration: underline;
+}
+.count {
+  margin: 0 0 var(--space-3);
+  font-family: var(--font-head);
+  font-weight: 700;
+  font-size: var(--text-lg);
+  color: var(--electric-blue);
+}
+.suspect-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.suspect-list li {
+  display: flex;
+  flex-direction: column;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: var(--space-2);
+}
+.suspect-list span {
+  font-size: var(--text-sm);
+  color: var(--muted);
+}
+.solved-cases { margin-top: var(--space-5); }
+.solved-case-list {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-3);
+}
+.solved-case {
+  text-align: left;
+  padding: var(--space-4);
+  border-radius: var(--radius-card);
+  font-family: var(--font-head);
+  font-weight: 700;
+  transition: background-color var(--fast) var(--ease);
+}
+.solved-case:hover { background: var(--tile); }
+
+@media (min-width: 768px) {
+  .clues-grid { grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); }
+  .solved-case-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
 /* Case brief: one centered card. */
 .brief {
   max-width: 560px;

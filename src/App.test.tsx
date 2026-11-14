@@ -10,6 +10,13 @@ vi.mock('./stats', () => ({
   deseasonalize: vi.fn(() => []),
 }))
 vi.mock('./ui/Chart', () => ({ Chart: () => <figure aria-label="chart" /> }))
+// No question can split, so the clues screen lists the suspects as buttons; Clues.test.tsx covers the questions.
+vi.mock('./clues', () => ({
+  questions: [],
+  nextQuestion: () => null,
+  liveOptions: () => [],
+  narrow: (s: unknown) => s,
+}))
 vi.mock('./data', async () => {
   const f = await import('./fixtures')
   return {
@@ -64,7 +71,7 @@ test('walks clues, scene, brief, evidence, verdict and back to clues', async () 
   render(<App />)
 
   await expectScreen('Gather the clues')
-  await user.click(await screen.findByRole('button', { name: 'Continue' }))
+  await user.click(await screen.findByRole('button', { name: 'air temperature' }))
 
   await expectScreen('Pick the scene')
   await user.click(screen.getByRole('button', { name: 'Use this region' }))
@@ -85,7 +92,7 @@ test('walks clues, scene, brief, evidence, verdict and back to clues', async () 
 test('Change on the brief goes back to the clues', async () => {
   const user = userEvent.setup()
   render(<App />)
-  await user.click(await screen.findByRole('button', { name: 'Continue' }))
+  await user.click(await screen.findByRole('button', { name: 'air temperature' }))
   await user.click(screen.getByRole('button', { name: 'Use this region' }))
   await user.click(screen.getByRole('button', { name: 'Change' }))
   await expectScreen('Gather the clues')
@@ -94,6 +101,6 @@ test('Change on the brief goes back to the clues', async () => {
 test('a solved case opens straight at the brief', async () => {
   const user = userEvent.setup()
   render(<App />)
-  await user.click(await screen.findByRole('button', { name: 'Open a solved case' }))
+  await user.click(await screen.findByRole('button', { name: 'Synthetic demo' }))
   await expectScreen('Case brief')
 })
