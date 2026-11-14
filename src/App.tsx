@@ -178,6 +178,18 @@ function CurrentScreen({ state, dispatch, files: { catalog, regions, leads } }: 
         />
       )
     case 'verdict':
-      return <VerdictView onRestart={() => dispatch({ type: 'restart' })} />
+      // "See the verdict" only appears once the series is ready, so all of these are set.
+      if (!state.variable || !state.place || !state.hunch || !state.load.series) return null
+      return (
+        <VerdictView
+          variable={state.variable}
+          placeName={placeName(state.place, regions)}
+          series={state.load.series}
+          deseasonalized={state.deseasonalized}
+          hunch={state.hunch}
+          regions={regions}
+          onRestart={() => dispatch({ type: 'restart' })}
+        />
+      )
   }
 }
