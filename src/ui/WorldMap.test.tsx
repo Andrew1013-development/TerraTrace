@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react'
 import { sampleRegions } from '../fixtures'
-import { densify, toLatLon, toVector } from './globe'
+import { densify, fitView, toLatLon, toVector } from './globe'
 import { WorldMap } from './WorldMap'
 
 vi.mock('../data', () => ({ loadRegionShapes: vi.fn(() => Promise.resolve({})) }))
@@ -34,4 +34,22 @@ test('without WebGL the map says so and still has its label', () => {
   render(<WorldMap regions={sampleRegions} label="World map, the Sahel highlighted" />)
   expect(screen.getByRole('img', { name: 'World map, the Sahel highlighted' })).toBeInTheDocument()
   expect(screen.getByText(/can't draw the 3D globe/)).toBeInTheDocument()
+})
+
+test('fitView centres on a shape and backs off further for a bigger one', () => {
+  const box = (s: number, w: number, n: number, e: number) => [[[w, s], [w, n], [e, n], [e, s], [w, s]]]
+  const small = fitView(box(9, 104, 11, 107), 0.2)
+  const big = fitView(box(15, -15, 35, 35), 0.2)
+  expect(small.lat).toBeCloseTo(10, 0)
+  expect(small.lon).toBeCloseTo(105.5, 0)
+  expect(big.distance).toBeGreaterThan(small.distance + 0.5)
+  // Every corner of the small box fits: sin θ / (d − cos θ) ≤ tanHalf.
+  const theta = Math.acos(toVector(9, 104).reduce((s, v, i) => s + v * toVector(small.lat, small.lon)[i], 0))
+  expect(Math.sin(theta) / (small.distance - Math.cos(theta))).toBeLessThanOrEqual(0.2 + 1e-9)
+})
+
+test('fitView can centre on a given point instead, such as a pin', () => {
+  const v = fitView([[[104, 9], [107, 11]]], 0.2, { lat: 10.2, lon: 105.8 })
+  expect(v.lat).toBeCloseTo(10.2, 6)
+  expect(v.lon).toBeCloseTo(105.8, 6)
 })

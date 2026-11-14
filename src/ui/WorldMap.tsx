@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { loadRegionShapes, type RegionShapes } from '../data'
 import { regionAt } from '../place'
 import type { Region } from '../types'
-import { densify, hasWebGL, toLatLon, toVector } from './globe'
+import { densify, fitView, hasWebGL, toLatLon, toVector } from './globe'
 
 type Box = [number, number, number, number] // [south, west, north, east]
 type Pin = { lat: number; lon: number }
@@ -17,8 +17,16 @@ type WorldMapProps = {
 
 type Globe = {
   update: (p: { regions: Region[]; shapes?: RegionShapes; highlight?: string; pin?: Pin }) => void
+  zoom: (factor: number) => void // below 1 moves closer
   dispose: () => void
 }
+
+// Camera distances from the globe's centre (radius 1): closest allowed, closest an automatic fit goes (small regions
+// keep some surroundings, and the image stays sharp), farthest (whole globe), and for a lone pin.
+const NEAR = 1.2
+const FIT_NEAR = 1.3
+const FAR = 4.3
+const PIN_DISTANCE = 1.6
 
 const boxRing = ([s, w, n, e]: Box) => [[w, s], [w, n], [e, n], [e, s], [w, s]]
 // A region's real outline rings ([lon, lat]), or its box while the outlines load or if they fail.
@@ -37,7 +45,7 @@ async function makeGlobe(host: HTMLDivElement, onPick: (lat: number, lon: number
 
   const scene = new THREE.Scene()
   const camera = new THREE.PerspectiveCamera(32, (host.clientWidth || 600) / (host.clientHeight || 420), 0.1, 100)
-  camera.position.set(...toVector(15, 20, 4.3))
+  camera.position.set(...toVector(15, 20, FAR))
   scene.add(new THREE.AmbientLight(0xffffff, 2.2))
   const sun = new THREE.DirectionalLight(0xffffff, 1.2)
   sun.position.set(-1, 1, 2) // follows the camera, so the side facing the user is always lit
@@ -80,6 +88,10 @@ async function makeGlobe(host: HTMLDivElement, onPick: (lat: number, lon: number
   scene.add(outlines)
   const dashed = new THREE.LineDashedMaterial({ color: 0xeafe07, dashSize: 0.018, gapSize: 0.012 })
   const under = new THREE.LineBasicMaterial({ color: 0x07173f }) // opaque: transparent lines draw last and would cover the dashes
+  // The chosen region's edge as a crisp line, sharp at any zoom (the canvas fill blurs up close).
+  const edge = new THREE.Group()
+  scene.add(edge)
+  const edgeMat = new THREE.LineBasicMaterial({ color: 0xe8456b })
 
   const pin = new THREE.Group()
   const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.006, 0.006, 0.12, 8), new THREE.MeshBasicMaterial({ color: 0xffffff }))
@@ -92,30 +104,42 @@ async function makeGlobe(host: HTMLDivElement, onPick: (lat: number, lon: number
 
   const controls = new OrbitControls(camera, renderer.domElement)
   controls.enablePan = false
-  controls.enableZoom = false // the mouse wheel keeps scrolling the page
   controls.enableDamping = true
-  controls.rotateSpeed = 0.5
+  controls.minDistance = NEAR // never inside the globe; the canvas clips everything to the box
+  controls.maxDistance = FAR
 
-  // Turning to face a target: a quaternion slerp of the camera around the globe.
+  // Moving to a view: the camera swings around the globe (quaternion slerp) while its distance eases to the new one.
   const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
-  let aim: { from: InstanceType<typeof THREE.Vector3>; turn: InstanceType<typeof THREE.Quaternion>; start: number } | null = null
+  type Aim = { dir: InstanceType<typeof THREE.Vector3>; turn: InstanceType<typeof THREE.Quaternion>; d0: number; d1: number; start: number }
+  let aim: Aim | null = null
   let aimedAt = ''
-  const face = (lat: number, lon: number) => {
-    const to = new THREE.Vector3(...toVector(lat, lon, camera.position.length()))
-    if (reduced) return void camera.position.copy(to)
-    const from = camera.position.clone()
-    aim = { from, turn: new THREE.Quaternion().setFromUnitVectors(from.clone().normalize(), to.clone().normalize()), start: performance.now() }
+  const clampDistance = (d: number) => Math.min(FAR, Math.max(NEAR, d))
+  const moveTo = (lat: number, lon: number, distance: number) => {
+    const dir = camera.position.clone().normalize()
+    const to = new THREE.Vector3(...toVector(lat, lon))
+    const d1 = clampDistance(distance)
+    if (reduced) return void camera.position.copy(to.multiplyScalar(d1))
+    aim = { dir, turn: new THREE.Quaternion().setFromUnitVectors(dir, to), d0: camera.position.length(), d1, start: performance.now() }
   }
+  // The view's narrower half-angle, with a margin so the shape doesn't touch the box's edge.
+  const tanHalf = () => 0.8 * Math.tan(((camera.fov / 2) * Math.PI) / 180) * Math.min(1, camera.aspect)
 
   let frame = 0
   const loop = (now: number) => {
     if (aim) {
       const t = Math.min(1, (now - aim.start) / 800)
       const e = t < 0.5 ? 2 * t * t : 1 - (-2 * t + 2) ** 2 / 2
-      camera.position.copy(aim.from).applyQuaternion(new THREE.Quaternion().slerp(aim.turn, e))
+      const d = aim.d0 + (aim.d1 - aim.d0) * e
+      camera.position.copy(aim.dir).applyQuaternion(new THREE.Quaternion().slerp(aim.turn, e)).multiplyScalar(d)
       camera.lookAt(0, 0, 0)
       if (t === 1) aim = null
     }
+    // Up close: slower dragging, and dashes that shrink with the view so outlines stay readable.
+    const k = (camera.position.length() - 1) / (FAR - 1)
+    controls.rotateSpeed = Math.max(0.05, 0.5 * k)
+    dashed.dashSize = Math.max(0.0015, 0.018 * k)
+    dashed.gapSize = Math.max(0.001, 0.012 * k)
+    pin.scale.setScalar(Math.max(0.04, k)) // the same size on screen at any zoom
     controls.update()
     renderer.render(scene, camera)
     frame = requestAnimationFrame(loop)
@@ -166,8 +190,16 @@ async function makeGlobe(host: HTMLDivElement, onPick: (lat: number, lon: number
       }
 
       ctx.clearRect(0, 0, canvas.width, canvas.height)
+      edge.children.forEach((c) => (c as InstanceType<typeof THREE.Line>).geometry.dispose())
+      edge.clear()
       const chosen = regions.find((r) => r.id === highlight)
       if (chosen) {
+        for (const ring of ringsOf(chosen, shapes)) {
+          const points = densify(ring).map(([lon, lat]) => new THREE.Vector3(...toVector(lat, lon, 1.005)))
+          const line = new THREE.Line(new THREE.BufferGeometry().setFromPoints(points), edgeMat)
+          line.renderOrder = 2
+          edge.add(line)
+        }
         ctx.beginPath()
         for (const ring of ringsOf(chosen, shapes)) {
           ring.forEach(([lon, lat], i) => {
@@ -180,10 +212,6 @@ async function makeGlobe(host: HTMLDivElement, onPick: (lat: number, lon: number
         }
         ctx.fillStyle = 'rgba(228, 55, 0, 0.45)'
         ctx.fill('evenodd')
-        ctx.lineWidth = 5
-        ctx.lineJoin = 'round'
-        ctx.strokeStyle = '#E8456B'
-        ctx.stroke()
       }
       overlayTex.needsUpdate = true
 
@@ -194,10 +222,17 @@ async function makeGlobe(host: HTMLDivElement, onPick: (lat: number, lon: number
         pin.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), normal)
       }
 
-      const target = p ?? (chosen && { lat: (chosen.bbox[0] + chosen.bbox[2]) / 2, lon: (chosen.bbox[1] + chosen.bbox[3]) / 2 })
-      const key = target ? `${target.lat},${target.lon}` : ''
-      if (target && key !== aimedAt) face(target.lat, target.lon)
+      // Centre the pin (or the region) and zoom so the whole region shape fits; a lone pin gets a fixed close view.
+      const key = `${highlight ?? ''}|${p ? `${p.lat},${p.lon}` : ''}|${shapes ? 1 : 0}`
+      if ((p || chosen) && key !== aimedAt) {
+        const view = chosen ? fitView(ringsOf(chosen, shapes), tanHalf(), p) : { ...p!, distance: PIN_DISTANCE }
+        moveTo(view.lat, view.lon, Math.max(FIT_NEAR, view.distance))
+      }
       aimedAt = key
+    },
+    zoom(factor) {
+      const { lat, lon } = toLatLon(camera.position.x, camera.position.y, camera.position.z)
+      moveTo(lat, lon, camera.position.length() * factor)
     },
     dispose() {
       cancelAnimationFrame(frame)
@@ -277,8 +312,20 @@ export function WorldMap({ regions, highlight, pin, label, onRegion }: WorldMapP
         </>
       ) : (
         <>
-          <div ref={ref} className="world-map-globe" role="img" aria-label={label} />
-          <figcaption className="map-hint">Drag to turn the globe. Click inside a dashed outline to pick that region.</figcaption>
+          <div className="world-map-stage">
+            <div ref={ref} className="world-map-globe" role="img" aria-label={label} />
+            <div className="zoom-buttons">
+              <button type="button" aria-label="Zoom in" disabled={!ready} onClick={() => globe.current?.zoom(0.7)}>
+                +
+              </button>
+              <button type="button" aria-label="Zoom out" disabled={!ready} onClick={() => globe.current?.zoom(1 / 0.7)}>
+                −
+              </button>
+            </div>
+          </div>
+          <figcaption className="map-hint">
+            Drag to turn the globe, scroll or pinch to zoom. Click inside a dashed outline to pick that region.
+          </figcaption>
         </>
       )}
     </figure>

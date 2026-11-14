@@ -38,3 +38,18 @@ export function hasWebGL(): boolean {
     return false
   }
 }
+
+// Where to put the camera so a shape fills the view: looking at `center` (default: the shape's own middle),
+// from far enough that every point fits inside a view whose half-height (or half-width) has tangent `tanHalf`.
+export function fitView(rings: number[][][], tanHalf: number, center?: { lat: number; lon: number }) {
+  const flat = rings.flat()
+  const points = flat.map(([lon, lat]) => toVector(lat, lon))
+  // The middle of the shape's extent, so it sits in the middle of the view.
+  // shortcut: assumes no shape crosses the ±180° meridian (none of ours does); handle wrap-around if one ever does.
+  const mid = (i: number) => (Math.min(...flat.map((p) => p[i])) + Math.max(...flat.map((p) => p[i]))) / 2
+  const c = center ? toVector(center.lat, center.lon) : toVector(mid(1), mid(0))
+  // The widest angle, seen from the globe's centre, between the middle and any point of the shape.
+  const theta = Math.max(0, ...points.map((p) => Math.acos(Math.min(1, p[0] * c[0] + p[1] * c[1] + p[2] * c[2]))))
+  // A point at that angle sits sin θ off the axis and cos θ along it; keep sin θ / (d − cos θ) ≤ tanHalf.
+  return { ...(center ?? { lat: mid(1), lon: mid(0) }), distance: Math.cos(theta) + Math.sin(theta) / tanHalf }
+}

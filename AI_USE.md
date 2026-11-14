@@ -39,3 +39,4 @@ One line per meaningful use of AI tools. No AI model runs in the app.
 | Question wording | Dev C, for Dev A | Claude Code | Wrote questionText and its tests in src/clues, and put the live-choices placeholder in three questions so the text names only the choices shown | Dev C |
 | Scene map detail | Dev C | Claude Code | Coloured the world map, drew real region outlines inside dashed sampled boxes, added the typed-point pin, regionAt and countryAt, and the script that makes the region and country files, with their tests | Dev C |
 | Scene globe | Dev C | Claude Code | Replaced the flat map with a three.js globe on the NASA Blue Marble image, with dashed real region outlines, the red highlight, the pin, click-to-pick, and full Natural Earth outlines for whole named regions, with their tests | Dev C |
+| Globe zoom | Dev C | Claude Code | Added wheel, pinch and button zoom, and the automatic centre-and-fit for each region or pin (fitView), with its tests | Dev C |
