@@ -6,10 +6,13 @@ const MESSAGES = {
   unavailable: "This data isn't available for that place. Try a prepared region.",
 };
 
+// A region file comes from this site, so its network message must not name NASA's data service.
+const REGION_NETWORK = "We couldn't load this region's data. Check your connection, then choose the region again.";
+
 export class DataError extends Error {
   kind: "rate-limit" | "network" | "unavailable";
-  constructor(kind: DataError["kind"]) {
-    super(MESSAGES[kind]);
+  constructor(kind: DataError["kind"], message = MESSAGES[kind]) {
+    super(message);
     this.kind = kind;
   }
 }
@@ -27,7 +30,15 @@ function memo<T>(key: string, load: () => Promise<T>): Promise<T> {
 }
 
 const staticFile = (path: string) => `${import.meta.env.BASE_URL}data/${path}`;
-const loadFile = <T,>(name: string) => memo(name, () => fetchJson(staticFile(name)) as Promise<T>);
+// A body of the wrong shape (a corrupted deploy) must not reach the screens: the catalog, regions
+// and leads are arrays, the map files are objects.
+const isObject = (body: unknown) => typeof body === "object" && body !== null && !Array.isArray(body);
+const loadFile = <T,>(name: string, ok: (body: unknown) => boolean = Array.isArray) =>
+  memo(name, async () => {
+    const body = await fetchJson(staticFile(name));
+    if (!ok(body)) throw new DataError("unavailable");
+    return body as T;
+  });
 
 export function loadCatalog(): Promise<Variable[]> {
   return loadFile("catalog.json");
@@ -46,7 +57,7 @@ export function loadLeads(): Promise<Lead[]> {
 // Each region's real outline trimmed to its box (scripts/make_map_shapes.py), for the Scene map.
 export type RegionShapes = Record<string, { type: "MultiPolygon"; coordinates: number[][][][]; outline: string }>;
 export function loadRegionShapes(): Promise<RegionShapes> {
-  return loadFile("region-shapes.json");
+  return loadFile("region-shapes.json", isObject);
 }
 
 // Country outlines and names, for naming a typed point outside every region.
@@ -55,7 +66,7 @@ export type Countries = {
   features: { type: "Feature"; properties: { name: string }; geometry: { type: string; coordinates: unknown } }[];
 };
 export function loadCountries(): Promise<Countries> {
-  return loadFile("countries.json");
+  return loadFile("countries.json", isObject);
 }
 
 const POWER_URL = "https://power.larc.nasa.gov/api/temporal/monthly/point";
@@ -99,6 +110,8 @@ async function loadPoint(variable: Variable, lat: string, lon: string, placeId: 
   if (!raw || typeof raw !== "object") throw new DataError("unavailable");
   const fill = body?.header?.fill_value ?? -999;
   const keys = Object.keys(raw).filter((k) => /^\d{4}(0[1-9]|1[0-2])$/.test(k)).sort();
+  // No months at all (an array, {} or an error object) is a failed retrieval, not an empty record.
+  if (keys.length === 0) throw new DataError("unavailable");
   return {
     variableId: variable.id,
     placeId,
@@ -117,8 +130,14 @@ const coord = (x: number) => x.toFixed(2).replace(/^-(0\.00)$/, "$1");
 
 // Our own files are trusted for content, but a corrupted deploy must not reach analyze (D7).
 async function loadRegion(variable: Variable, regionId: string): Promise<Series> {
-  const s = (await fetchJson(staticFile(`series/${variable.id}/${regionId}.json`))) as Partial<Series> | null;
-  if (!Array.isArray(s?.dates) || !Array.isArray(s.values) || s.dates.length !== s.values.length) {
+  const s = (await fetchJson(staticFile(`series/${variable.id}/${regionId}.json`)).catch((e: DataError) => {
+    throw e.kind === "network" ? new DataError("network", REGION_NETWORK) : e;
+  })) as Partial<Series> | null;
+  if (
+    !Array.isArray(s?.dates) || !Array.isArray(s.values) || s.dates.length !== s.values.length ||
+    !s.dates.every((d) => typeof d === "string" && /^\d{4}-(0[1-9]|1[0-2])$/.test(d)) ||
+    !s.values.every((v) => v === null || (typeof v === "number" && Number.isFinite(v)))
+  ) {
     throw new DataError("unavailable");
   }
   return s as Series;

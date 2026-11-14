@@ -1,5 +1,6 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import type { Screen } from '../App'
+import { listName } from '../place'
 import type { Hunch, Variable } from '../types'
 import fullLogo from './brand/space-apps-color-white.svg'
 import { ChartIcon, ChevronLeftIcon, ChevronRightIcon, ClipboardIcon, GlobeIcon, ScaleIcon, SearchIcon } from './icons'
@@ -54,7 +55,7 @@ export function Shell({ screen, variable, placeName, hunch, furthest, onGoTo = (
   const reach = Math.max(furthest ?? currentIndex, currentIndex)
   const values: Partial<Record<Screen, string>> = {
     clues: variable?.name,
-    scene: placeName,
+    scene: placeName && listName(placeName),
     brief: hunch ? HUNCH_TEXT[hunch] : undefined,
   }
   const context = [variable?.name, placeName, variable && `since ${variable.startYear}`].filter(Boolean).join(' · ')

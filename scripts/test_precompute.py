@@ -107,3 +107,66 @@ def test_cache_name_includes_the_end_year(tmp_path, monkeypatch):  # D5
 def test_booleans_are_not_measurements():  # D10: in Python, True is an int
     s = region_series(T2M, REGION, lambda lat, lon, v: power_response({"202001": True, "202002": 2.0}))
     assert s["values"] == [None, 2.0]
+
+
+def test_an_error_response_is_not_cached(tmp_path, monkeypatch):  # BR-02
+    monkeypatch.setattr(precompute, "CACHE", tmp_path)
+    monkeypatch.setattr(precompute.time, "sleep", lambda s: None)
+    replies = [{"messages": ["failure"]}, power_response({"202001": 1.0})]
+    calls = []
+    monkeypatch.setattr(precompute, "get_json", lambda url: calls.append(url) or replies.pop(0))
+    with pytest.raises(RuntimeError, match="without monthly data"):
+        precompute.make_fetch([T2M])(0, 0, T2M)
+    assert list(tmp_path.iterdir()) == []  # nothing cached
+    body = precompute.make_fetch([T2M])(0, 0, T2M)  # a fresh fetch, as on the next run
+    assert body["properties"]["parameter"]["T2M"] == {"202001": 1.0}
+    assert len(calls) == 2
+
+
+@pytest.mark.parametrize("body", [None, [], "text", {"properties": None}, {"properties": {"parameter": {"T2M": []}}}])
+def test_a_malformed_response_is_refused_and_not_cached(tmp_path, monkeypatch, body):  # BR-02
+    monkeypatch.setattr(precompute, "CACHE", tmp_path)
+    monkeypatch.setattr(precompute.time, "sleep", lambda s: None)
+    monkeypatch.setattr(precompute, "get_json", lambda url: body)
+    with pytest.raises(RuntimeError, match="without monthly data"):
+        precompute.make_fetch([T2M])(0, 0, T2M)
+    assert list(tmp_path.iterdir()) == []
+
+
+def test_every_parameter_of_the_call_must_be_present(tmp_path, monkeypatch):  # BR-02
+    ts = {**T2M, "id": "TS", "powerParameter": "TS"}
+    monkeypatch.setattr(precompute, "CACHE", tmp_path)
+    monkeypatch.setattr(precompute.time, "sleep", lambda s: None)
+    monkeypatch.setattr(precompute, "get_json", lambda url: power_response({"202001": 1.0}))  # T2M only
+    with pytest.raises(RuntimeError, match="without monthly data"):
+        precompute.make_fetch([T2M, ts])(0, 0, T2M)
+    assert list(tmp_path.iterdir()) == []
+
+
+@pytest.mark.parametrize("cut_short", ['{"properties": {"parameter": {"T2M": {"2020', "", '{"messages": ["failure"]}'])
+def test_an_unusable_cache_file_is_fetched_again(tmp_path, monkeypatch, cut_short):  # custom-period D4
+    monkeypatch.setattr(precompute, "CACHE", tmp_path)
+    monkeypatch.setattr(precompute.time, "sleep", lambda s: None)
+    calls = []
+    monkeypatch.setattr(precompute, "get_json", lambda url: calls.append(url) or power_response({"202001": 1.0}))
+    path = tmp_path / f"0_0_2020-{precompute.END_YEAR}_T2M.json"
+    path.write_text(cut_short, "utf-8")
+    fetch = precompute.make_fetch([T2M])
+    assert fetch(0, 0, T2M) == power_response({"202001": 1.0})
+    assert fetch(0, 0, T2M) == power_response({"202001": 1.0})
+    assert len(calls) == 1  # refetched once, then served from the repaired cache
+    assert [p.name for p in tmp_path.iterdir()] == [path.name]  # no temporary file left behind
+
+
+def test_a_write_that_stops_halfway_leaves_no_cache_file(tmp_path, monkeypatch):  # custom-period D4
+    monkeypatch.setattr(precompute, "CACHE", tmp_path)
+    monkeypatch.setattr(precompute.time, "sleep", lambda s: None)
+    monkeypatch.setattr(precompute, "get_json", lambda url: power_response({"202001": 1.0}))
+
+    def stopped(src, dst):
+        raise KeyboardInterrupt
+
+    monkeypatch.setattr(precompute.os, "replace", stopped, raising=False)
+    with pytest.raises(KeyboardInterrupt):
+        precompute.make_fetch([T2M])(0, 0, T2M)
+    assert not (tmp_path / f"0_0_2020-{precompute.END_YEAR}_T2M.json").exists()

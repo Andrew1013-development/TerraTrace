@@ -16,3 +16,12 @@ test('draws the data line and the straight-line fit, with the anomaly axis label
   expect(container.querySelector('[aria-label="linear-regression"]')).not.toBeNull()
   expect(screen.getByText(/Difference from the usual value for that month \(°C\)/)).toBeInTheDocument()
 })
+
+// Integration report, defect 5: with too little data there are no statistics, so no fit line.
+test('fit={false} draws the data line only: no fit line, no caption, no mention in the label', () => {
+  const { container } = render(<Chart series={sampleSeries} deseasonalized={false} fit={false} />)
+  expect(container.querySelector('[aria-label="line"]')).not.toBeNull()
+  expect(container.querySelector('[aria-label="linear-regression"]')).toBeNull()
+  expect(screen.queryByText('Line: straight-line fit to the points shown.')).toBeNull()
+  expect(screen.getByRole('img', { name: 'Monthly values in °C, 2000-01 to 2014-12' })).toBeInTheDocument()
+})

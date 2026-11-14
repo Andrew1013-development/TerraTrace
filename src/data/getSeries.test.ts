@@ -159,3 +159,57 @@ test("requests still work on browsers without AbortSignal.timeout (Safari before
     AbortSignal.timeout = original;
   }
 });
+
+// Back-end report BR-01: a region file with bad contents must not reach analyze.
+const months = (n: number) => Array.from({ length: n }, (_, i) => `${2000 + Math.floor(i / 12)}-${String((i % 12) + 1).padStart(2, "0")}`);
+const regionFile = (dates: unknown[], values: unknown[]) => ({ variableId: "T2M", placeId: "sahel", unit: "°C", source: "s", dates, values });
+const sahel = { kind: "region" as const, id: "sahel" };
+
+test.each([
+  ["a null date", [null], [1]],
+  ["a null date among 120 good months", [null, ...months(120).slice(1)], Array(120).fill(1)],
+  ["a date that is not YYYY-MM", ["2000-13"], [1]],
+  ["a number as a date", [200001], [1]],
+  ["a text value", ["2000-01"], ["1"]],
+  ["an object value", ["2000-01"], [{}]],
+])("a region file with %s is unavailable, and is not cached (BR-01)", async (_name, dates, values) => {
+  fetchMock.mockResolvedValueOnce(json(regionFile(dates, values)));
+  const err = await data.getSeries(t2m, sahel).catch((e) => e);
+  expect(err).toBeInstanceOf(data.DataError);
+  expect(err.kind).toBe("unavailable");
+  fetchMock.mockResolvedValueOnce(json(regionFile(months(120), Array(120).fill(1))));
+  await expect(data.getSeries(t2m, sahel)).resolves.toMatchObject({ placeId: "sahel" });
+  expect(fetchMock).toHaveBeenCalledTimes(2);
+});
+
+test("a region file with null values and good dates is still accepted (BR-01)", async () => {
+  fetchMock.mockResolvedValue(json(regionFile(["2000-01", "2000-02"], [null, 1.5])));
+  await expect(data.getSeries(t2m, sahel)).resolves.toMatchObject({ values: [null, 1.5] });
+});
+
+// Back-end report BR-03: parameter data with no months is a failure, not a record of zero months.
+test.each([
+  ["an array", []],
+  ["an empty object", {}],
+  ["an error object", { error: "unknown parameter" }],
+  ["only the annual key", { "202013": 1 }],
+])("POWER parameter data that is %s is unavailable, and is not cached (BR-03)", async (_name, body) => {
+  fetchMock.mockImplementation(async () => json({ properties: { parameter: { T2M: body } } }));
+  const err = await data.getSeries(t2m, point).catch((e) => e);
+  expect(err).toBeInstanceOf(data.DataError);
+  expect(err.kind).toBe("unavailable");
+  expect(err.message).toBe("This data isn't available for that place. Try a prepared region.");
+  await expect(data.getSeries(t2m, point)).rejects.toMatchObject({ kind: "unavailable" });
+  expect(fetchMock).toHaveBeenCalledTimes(2);
+});
+
+// Integration report, defect 1: a region file comes from this site, not from NASA's data service.
+test("a region that cannot be reached says so, without naming NASA's data service (integration 1)", async () => {
+  fetchMock.mockRejectedValue(new TypeError("Failed to fetch"));
+  const err = await data.getSeries(t2m, sahel).catch((e) => e);
+  expect(err).toBeInstanceOf(data.DataError);
+  expect(err.kind).toBe("network");
+  expect(err.message).toBe("We couldn't load this region's data. Check your connection, then choose the region again.");
+  const pointErr = await data.getSeries(t2m, point).catch((e) => e);
+  expect(pointErr.message).toBe("We couldn't reach NASA's data service. Check your connection, or try a prepared region.");
+});

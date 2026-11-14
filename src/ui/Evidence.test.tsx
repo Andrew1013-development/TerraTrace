@@ -16,8 +16,8 @@ vi.mock('../stats', async () => ({
 }))
 // The stand-in chart reports which months it was given.
 vi.mock('./Chart', () => ({
-  Chart: (p: { series: { dates: string[] }; children?: React.ReactNode }) => (
-    <figure aria-label={`chart ${p.series.dates[0]} to ${p.series.dates.at(-1)}`}>{p.children}</figure>
+  Chart: (p: { series: { dates: string[] }; fit?: boolean; children?: React.ReactNode }) => (
+    <figure aria-label={`chart ${p.series.dates[0]} to ${p.series.dates.at(-1)}`} data-fit={String(p.fit)}>{p.children}</figure>
   ),
 }))
 vi.mock('./starBurst', () => ({ starBurst: vi.fn() }))
@@ -25,7 +25,7 @@ vi.mock('./starBurst', () => ({ starBurst: vi.fn() }))
 const ready: CaseState['load'] = { status: 'ready', series: sampleSeries }
 
 function renderEvidence(over: Partial<Parameters<typeof Evidence>[0]> = {}) {
-  const props = { load: ready, deseasonalized: true, period: null, onToggle: vi.fn(), onPeriod: vi.fn(), onNext: vi.fn(), ...over }
+  const props = { load: ready, deseasonalized: true, period: null, onToggle: vi.fn(), onPeriod: vi.fn(), onNext: vi.fn(), onBack: vi.fn(), ...over }
   return { props, ...render(<Evidence {...props} />) }
 }
 
@@ -60,7 +60,8 @@ test('rate, p-value and interval are a labeled list in one group', () => {
   ])
   expect(within(group).getByText('+0.24 °C')).toBeInTheDocument()
   // Same formatter as the verdict: 2 significant figures, so 0.3 reads 0.30 (D16).
-  expect(within(group).getByText('0.18 to 0.30 °C')).toBeInTheDocument()
+  // The interval carries its signs like the rate (integration 4).
+  expect(within(group).getByText('+0.18 to +0.30 °C')).toBeInTheDocument()
 })
 
 test('the source line is visible', () => {
@@ -94,6 +95,65 @@ test('See the verdict is the primary button and calls onNext', async () => {
   const { props } = renderEvidence()
   await userEvent.click(screen.getByRole('button', { name: 'See the verdict' }))
   expect(props.onNext).toHaveBeenCalledTimes(1)
+})
+
+// Integration report, defect 1.
+test('an error offers "Choose another place", which calls onBack', async () => {
+  const error = Object.assign(new Error('x'), { kind: 'network' as const })
+  const { props } = renderEvidence({ load: { status: 'error', error } })
+  await userEvent.click(screen.getByRole('button', { name: 'Choose another place' }))
+  expect(props.onBack).toHaveBeenCalledTimes(1)
+  expect(screen.queryByRole('button', { name: 'See the verdict' })).toBeNull()
+})
+
+test('loading and ready states have no "Choose another place" button', () => {
+  const { rerender, props } = renderEvidence({ load: { status: 'loading' } })
+  expect(screen.queryByRole('button', { name: 'Choose another place' })).toBeNull()
+  rerender(<Evidence {...props} load={ready} />)
+  expect(screen.queryByRole('button', { name: 'Choose another place' })).toBeNull()
+})
+
+// Integration report, defect 3: "0.050" must not appear on the significant side of 0.05.
+test.each([
+  [0.0496, '< 0.050'],
+  [0.04999, '< 0.050'],
+  [0.05, '0.050'],
+  [0.0504, '0.050'],
+  [0.0494, '0.049'],
+  [0.0506, '0.051'],
+  [0.0009, '< 0.001'],
+  [0.001, '0.001'],
+  [1, '1.000'],
+])('a p-value of %s reads "%s"', (mkP, shown) => {
+  vi.mocked(analyze).mockReturnValue({ ...sampleResult, mkP })
+  renderEvidence()
+  const group = screen.getByRole('group', { name: 'Trend statistics' })
+  expect(within(group).getAllByRole('definition')[1].textContent).toBe(shown)
+})
+
+// Integration report, defect 4.
+test('a negative rate and an interval across zero carry their signs', () => {
+  vi.mocked(analyze).mockReturnValue({ ...sampleResult, slopePerDecade: -0.026, ci95: [-0.03, 0.006] })
+  renderEvidence()
+  expect(screen.getByText('\u22120.026 °C')).toBeInTheDocument()
+  expect(screen.getByText('\u22120.030 to +0.0060 °C')).toBeInTheDocument()
+})
+
+// Integration report, defect 5.
+test('the chart draws its fit line only when there is a result', () => {
+  const { rerender, props } = renderEvidence()
+  expect(screen.getByRole('figure', { name: /^chart/ })).toHaveAttribute('data-fit', 'true')
+  vi.mocked(analyze).mockReturnValue(null)
+  rerender(<Evidence {...props} deseasonalized={false} />)
+  expect(screen.getByRole('figure', { name: /^chart/ })).toHaveAttribute('data-fit', 'false')
+})
+
+// Integration report, defect 9.
+test('a percent series gives its rate and interval in percentage points', () => {
+  vi.mocked(analyze).mockReturnValue({ ...sampleResult, slopePerDecade: 0.76, ci95: [0.5, 1] })
+  renderEvidence({ load: { status: 'ready', series: { ...sampleSeries, unit: '%' } } })
+  expect(screen.getByText('+0.76 percentage points')).toBeInTheDocument()
+  expect(screen.getByText('+0.50 to +1.0 percentage points')).toBeInTheDocument()
 })
 
 test('the year pickers offer whole years and disable any span under 10 years', () => {

@@ -28,6 +28,7 @@ export type CaseEvent =
   | { type: 'pickPlace'; place: Place }
   | { type: 'confirm'; hunch: Hunch }
   | { type: 'change' }
+  | { type: 'changePlace' }
   | { type: 'goTo'; screen: Screen }
   | { type: 'seeVerdict' }
   | { type: 'restart' }
@@ -81,6 +82,11 @@ export function caseReducer(state: CaseState, event: CaseEvent): CaseState {
     case 'change':
       return state.screen === 'brief'
         ? { ...state, screen: 'clues', variable: undefined, place: undefined, hunch: undefined, period: null, load: IDLE }
+        : state
+    case 'changePlace':
+      // The only way out of a failed load: back to the scene, with the variable kept.
+      return state.screen === 'evidence' && state.load.status === 'error'
+        ? { ...state, screen: 'scene', place: undefined, hunch: undefined, period: null, load: IDLE }
         : state
     case 'goTo': {
       const to = STEPS.indexOf(event.screen)
@@ -216,6 +222,7 @@ function CurrentScreen({ state, dispatch, files: { catalog, regions, leads } }: 
           onToggle={() => dispatch({ type: 'toggle' })}
           onPeriod={(period) => dispatch({ type: 'setPeriod', period })}
           onNext={() => dispatch({ type: 'seeVerdict' })}
+          onBack={() => dispatch({ type: 'changePlace' })}
         />
       )
     case 'verdict':

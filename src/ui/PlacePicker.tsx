@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { loadCountries, type Countries } from '../data'
-import { countryAt, leadsFor, parsePoint, regionAt } from '../place'
+import { countryAt, leadsFor, listName, parsePoint, regionAt } from '../place'
 import type { Lead, Place, Region, Variable } from '../types'
 import { GlobeIcon, PinIcon } from './icons'
 import { ScreenHeading } from './ScreenHeading'
@@ -112,7 +112,7 @@ export function PlacePicker({ variable, regions, leads, place, onPick }: PlacePi
               <option value="">Choose a region</option>
               {regions.map((r) => (
                 <option key={r.id} value={r.id}>
-                  {r.name}
+                  {listName(r.name)}
                 </option>
               ))}
             </select>

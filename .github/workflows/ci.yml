@@ -17,4 +17,9 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npx vitest run
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.14'
+      - run: pip install -r scripts/requirements.txt
+      - run: pytest scripts -v
       - run: npm run build

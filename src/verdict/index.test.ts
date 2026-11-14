@@ -1,7 +1,7 @@
 import { describe, expect, test } from "vitest";
 import { sampleCatalog } from "../fixtures";
 import type { TrendResult, Verdict } from "../types";
-import { formatNumber, getVerdict, hunchLine, oppositeDirections } from "./index";
+import { formatNumber, getVerdict, hunchLine, oppositeDirections, rateUnit } from "./index";
 
 const T2M = sampleCatalog.find((v) => v.id === "T2M")!; // name "air temperature", unit "°C"
 const PLACE = "Sahel";
@@ -66,7 +66,7 @@ describe("verdict wording", () => {
       "Air temperature in Sahel has fallen by about 0.24 °C per decade, and the evidence is strong.",
     );
     expect(text(r(0.01, [-0.1, 0.3], 0.24))).toBe(
-      "Air temperature in Sahel may be changing, by about 0.24 °C per decade, but our two checks disagree. Treat this as uncertain.",
+      "Air temperature in Sahel may be rising, by about 0.24 °C per decade, but our two checks disagree. Treat this as uncertain.",
     );
     expect(text(r(0.2, [-0.1, 0.3], 0.03))).toBe(
       "We found no significant long-term trend in air temperature in Sahel. That is a real result: it has stayed within its normal ups and downs.",
@@ -154,7 +154,7 @@ describe("verdict with years (issue 46)", () => {
       "From 1995 to 2025, air temperature in Sahel has fallen by about 0.20 °C per decade, and the evidence is strong.",
     );
     expect(said(r(0.01, [-0.1, 0.3], 0.1)).text).toBe(
-      "From 1995 to 2025, air temperature in Sahel may be changing, by about 0.10 °C per decade, but our two checks disagree. Treat this as uncertain.",
+      "From 1995 to 2025, air temperature in Sahel may be rising, by about 0.10 °C per decade, but our two checks disagree. Treat this as uncertain.",
     );
     expect(said(r(0.2, [-0.1, 0.3], 0.03)).text).toBe(
       "From 1995 to 2025, we found no significant long-term trend in air temperature in Sahel. That is a real result: it has stayed within its normal ups and downs.",
@@ -174,4 +174,41 @@ describe("verdict with years (issue 46)", () => {
       expect(hunchLine("rise", dated)).toBe(hunchLine("rise", plain));
     }
   });
+});
+
+// Integration report, defect 2: the mixed sentence names the direction of the rate it prints.
+test("a mixed verdict says which way the rate points (integration 2)", () => {
+  expect(text(r(0.0005, [-0.03, 0.006], -0.026))).toBe(
+    "Air temperature in Sahel may be falling, by about 0.026 °C per decade, but our two checks disagree. Treat this as uncertain.",
+  );
+  expect(text(r(0.2, [0.1, 0.3], 0.2))).toContain("may be rising, by about 0.20 °C");
+  expect(text(r(0.01, [0.1, 0.3], -0.05))).toContain("may be falling, by about 0.050 °C"); // the slope decides, not the interval
+  expect(getVerdict(r(0.0005, [-0.03, 0.006], -0.026), T2M, PLACE).kind).toBe("mixed"); // the rule is untouched
+});
+
+// Back-end report BR-04: a significant rate below the formatNumber floor must not read "by about 0".
+test("a rise or fall too small to print does not say \"by about 0\" (BR-04)", () => {
+  expect(text(r(0.01, [1e-11, 2e-11], 1e-11))).toBe(
+    "Air temperature in Sahel has risen by less than 0.0000000001 °C per decade, and the evidence is strong.",
+  );
+  expect(text(r(0.01, [-2e-11, -1e-11], -1e-11))).toBe(
+    "Air temperature in Sahel has fallen by less than 0.0000000001 °C per decade, and the evidence is strong.",
+  );
+  expect(getVerdict(r(0.01, [1e-11, 2e-11], 1e-11), T2M, PLACE, [1995, 2025]).text).toBe(
+    "From 1995 to 2025, air temperature in Sahel has risen by less than 0.0000000001 °C per decade, and the evidence is strong.",
+  );
+  expect(text(r(0.01, [1e-10, 2e-10], 1e-10))).toContain("has risen by about 0.00000000010 °C"); // at the floor: printed
+  expect(formatNumber(1e-11)).toBe("0"); // the floor itself stays (D9)
+});
+
+// Integration report, defect 9: a rate in "%" is a change in percentage points, not a relative change.
+test("a rate of a percent variable is given in percentage points (integration 9)", () => {
+  const RH2M = sampleCatalog.find((x) => x.id === "RH2M")!;
+  expect(getVerdict(r(0.01, [0.5, 1], 0.76), RH2M, PLACE).text).toBe(
+    "Relative humidity in Sahel has risen by about 0.76 percentage points per decade, and the evidence is strong.",
+  );
+  expect(getVerdict(r(0.2, [0.5, 1], -0.76), RH2M, PLACE).text).toContain("by about 0.76 percentage points per decade");
+  expect(rateUnit("%")).toBe("percentage points");
+  expect(rateUnit("°C")).toBe("°C");
+  expect(rateUnit("mm/day")).toBe("mm/day");
 });

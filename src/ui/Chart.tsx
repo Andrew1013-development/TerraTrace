@@ -3,13 +3,14 @@ import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { deseasonalize } from '../stats'
 import type { Series } from '../types'
 
-type ChartProps = { series: Series; deseasonalized: boolean; children?: ReactNode } // children: controls shown in the chart's box
+// children: controls shown in the chart's box. fit: draw the straight-line fit; off when there are too few months for any statistics.
+type ChartProps = { series: Series; deseasonalized: boolean; fit?: boolean; children?: ReactNode }
 
-export function Chart({ series, deseasonalized, children }: ChartProps) {
+export function Chart({ series, deseasonalized, fit = true, children }: ChartProps) {
   const ref = useRef<HTMLDivElement>(null)
   const [width, setWidth] = useState(720)
   const yLabel = deseasonalized ? `Difference from the usual value for that month (${series.unit})` : series.unit
-  const label = `Monthly ${deseasonalized ? 'differences from the usual value' : 'values'} in ${series.unit}, ${series.dates[0]} to ${series.dates[series.dates.length - 1]}, with a straight-line fit`
+  const label = `Monthly ${deseasonalized ? 'differences from the usual value' : 'values'} in ${series.unit}, ${series.dates[0]} to ${series.dates[series.dates.length - 1]}${fit ? ', with a straight-line fit' : ''}`
 
   // Draw at the width of the card, so the chart fills its column and its text stays its real size.
   useEffect(() => {
@@ -44,27 +45,29 @@ export function Chart({ series, deseasonalized, children }: ChartProps) {
       marks: [
         // undefined values break the line at gaps instead of bridging them
         Plot.lineY(data, { x: 'date', y: (p) => p.value ?? undefined, stroke: 'var(--neon-blue)', strokeWidth: 1.5 }),
-        Plot.linearRegressionY(points, {
+        fit ? Plot.linearRegressionY(points, {
           x: 'date',
           y: 'value',
           stroke: 'var(--ink)',
           strokeWidth: 2,
           strokeDasharray: '6 4',
           ci: 0,
-        }), // Plot labels this group aria-label="linear-regression"; the hover style targets it
+        }) : null, // Plot labels this group aria-label="linear-regression"; the hover style targets it
 
       ],
     })
     ref.current?.append(plot)
     return () => plot.remove()
-  }, [series, deseasonalized, yLabel, width])
+  }, [series, deseasonalized, yLabel, width, fit])
 
   return (
     <figure className="chart-card underline-host">
       <div ref={ref} className="chart" role="img" aria-label={label} />
-      <figcaption>
-        <span className="underline underline-red">Line: straight-line fit to the points shown.</span>
-      </figcaption>
+      {fit && (
+        <figcaption>
+          <span className="underline underline-red">Line: straight-line fit to the points shown.</span>
+        </figcaption>
+      )}
       {children}
     </figure>
   )

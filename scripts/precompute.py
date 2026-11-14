@@ -8,6 +8,7 @@ Run from the repo root:  python scripts/precompute.py
 
 import json
 import math
+import os
 import re
 import sys
 import time
@@ -99,6 +100,14 @@ def get_json(url, get=requests.get, sleep=time.sleep):
         return r.json()
 
 
+def _usable(body, params):
+    """True when the body carries monthly data for every parameter asked for."""
+    try:
+        return all(isinstance(body["properties"]["parameter"][p], dict) for p in params)
+    except (KeyError, TypeError):
+        return False
+
+
 def make_fetch(catalog):
     """fetch(lat, lon, variable) that asks for every parameter sharing the variable's start year in one call."""
 
@@ -108,12 +117,24 @@ def make_fetch(catalog):
         # The end year is part of the name, so a longer record is never served from an old cache (D5).
         path = CACHE / f"{lat}_{lon}_{start}-{END_YEAR}_{'-'.join(params)}.json"
         if path.exists():
-            return json.loads(path.read_text("utf-8"))
+            # A file cut short by a stopped run, or an old cached error body, is fetched again.
+            try:
+                cached = json.loads(path.read_text("utf-8"))
+            except ValueError:
+                cached = None
+            if _usable(cached, params):
+                return cached
         url = (f"{POWER_URL}?parameters={','.join(params)}&community=AG"
                f"&longitude={lon}&latitude={lat}&start={start}&end={END_YEAR}&format=JSON")
         body = get_json(url)
+        # Checked before caching: a cached error body would fail every later run (BR-02).
+        if not _usable(body, params):
+            raise RuntimeError(f"POWER answered without monthly data: {url}\n{json.dumps(body)[:500]}")
         CACHE.mkdir(exist_ok=True)
-        path.write_text(json.dumps(body), "utf-8")
+        # Written under another name, then renamed: a stopped run never leaves half a file.
+        tmp = path.with_name(path.name + ".tmp")
+        tmp.write_text(json.dumps(body), "utf-8")
+        os.replace(tmp, path)
         time.sleep(PAUSE_SECONDS)
         return body
 

@@ -140,3 +140,10 @@ test('the context line joins the parts already chosen', () => {
   )
   expect(screen.getByText(`${v.name} · Sahel · since ${v.startYear}`)).toBeInTheDocument()
 })
+
+// Integration report, defect 6.
+test('the "Case so far" panel starts the place name with a capital', () => {
+  render(<Shell screen="brief" variable={v} placeName="the Sahel">x</Shell>)
+  expect(within(rail()).getByText('The Sahel')).toBeInTheDocument()
+  expect(within(rail()).queryByText('the Sahel')).toBeNull()
+})

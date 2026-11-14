@@ -1,5 +1,6 @@
 import { useMemo, useRef, useState, type ReactNode } from 'react'
 import { getSeries, type DataError } from '../data'
+import { listName } from '../place'
 import { analyze, countValid, slicePeriod, validPeriod } from '../stats'
 import type { Hunch, Region, Series, Variable, Verdict } from '../types'
 import { getVerdict, hunchLine, oppositeDirections } from '../verdict'
@@ -111,11 +112,12 @@ export function VerdictView({ variable, placeName, series, deseasonalized, perio
             <div className="card compare-card">
               <label className="field">
                 Compare another region
-                <select value={witness.status === 'idle' ? '' : witness.region.id} onChange={(e) => compareWith(e.target.value)}>
+                {/* Back to "Choose a region" after an error, so choosing the same region again retries it. */}
+                <select value={witness.status === 'idle' || witness.status === 'error' ? '' : witness.region.id} onChange={(e) => compareWith(e.target.value)}>
                   <option value="">Choose a region</option>
                   {others.map((r) => (
                     <option key={r.id} value={r.id}>
-                      {r.name}
+                      {listName(r.name)}
                     </option>
                   ))}
                 </select>
@@ -141,14 +143,14 @@ export function VerdictView({ variable, placeName, series, deseasonalized, perio
           )}
           {witness.status === 'error' && (
             <p role="alert" className="card error witness-note">
-              {witness.error.message}
+              {listName(witness.region.name)}: {witness.error.message}
             </p>
           )}
         </div>
       </div>
 
       {mainVerdict && witnessVerdict && oppositeDirections(mainVerdict, witnessVerdict) && (
-        <p className="opposite">These two regions are moving in opposite directions.</p>
+        <p className="opposite">These two places are moving in opposite directions.</p>
       )}
 
       <div className="actions">

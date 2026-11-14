@@ -4,7 +4,7 @@ import { Chart } from './Chart'
 import { RulerIcon, ScaleIcon, SpeedIcon } from './icons'
 import { PrimaryButton } from './PrimaryButton'
 import { analyze, countValid, selectableYears, slicePeriod, validPeriod } from '../stats'
-import { formatNumber } from '../verdict'
+import { formatNumber, rateUnit } from '../verdict'
 import { ScreenHeading } from './ScreenHeading'
 
 type Period = NonNullable<CaseState['period']>
@@ -16,11 +16,14 @@ type EvidenceProps = {
   onToggle: () => void
   onPeriod: (period: Period | null) => void
   onNext: () => void
+  onBack: () => void
 }
 
-const pValue = (p: number) => (p < 0.001 ? '< 0.001' : p.toFixed(3))
+// 3 decimals. A significant p that rounds up to "0.050" reads "< 0.050", so it never looks like the threshold.
+const pValue = (p: number) =>
+  p < 0.001 ? '< 0.001' : p < 0.05 && p.toFixed(3) === '0.050' ? '< 0.050' : p.toFixed(3)
 
-export function Evidence({ load, deseasonalized, period, onToggle, onPeriod, onNext }: EvidenceProps) {
+export function Evidence({ load, deseasonalized, period, onToggle, onPeriod, onNext, onBack }: EvidenceProps) {
   const series = load.series
   // The chart, its straight-line fit and the numbers all use the same months: the chosen years, or the full record.
   const shown = useMemo(() => (series && period ? slicePeriod(series, period.start, period.end) : series), [series, period])
@@ -35,15 +38,20 @@ export function Evidence({ load, deseasonalized, period, onToggle, onPeriod, onN
 
       {load.status === 'loading' && <p role="status">Loading the data…</p>}
       {load.status === 'error' && load.error && (
-        <p role="alert" className="error">
-          {load.error.message}
-        </p>
+        <>
+          <p role="alert" className="error">
+            {load.error.message}
+          </p>
+          <div className="actions">
+            <PrimaryButton onClick={onBack}>Choose another place</PrimaryButton>
+          </div>
+        </>
       )}
 
       {load.status === 'ready' && series && shown && (
         <>
           <div className="evidence-body">
-            <Chart series={shown} deseasonalized={deseasonalized}>
+            <Chart series={shown} deseasonalized={deseasonalized} fit={result !== null}>
               <label className="toggle">
                 <input type="checkbox" checked={deseasonalized} onChange={onToggle} />
                 Remove the seasonal cycle
@@ -92,7 +100,7 @@ export function Evidence({ load, deseasonalized, period, onToggle, onPeriod, onN
                     </dt>
                     <dd>
                       <span className="underline underline-red">
-                        {formatNumber(result.slopePerDecade, true)} {series.unit}
+                        {formatNumber(result.slopePerDecade, true)} {rateUnit(series.unit)}
                       </span>
                     </dd>
                   </div>
@@ -112,7 +120,7 @@ export function Evidence({ load, deseasonalized, period, onToggle, onPeriod, onN
                     </dt>
                     <dd>
                       <span className="underline underline-red">
-                        {formatNumber(result.ci95[0])} to {formatNumber(result.ci95[1])} {series.unit}
+                        {formatNumber(result.ci95[0], true)} to {formatNumber(result.ci95[1], true)} {rateUnit(series.unit)}
                       </span>
                     </dd>
                   </div>

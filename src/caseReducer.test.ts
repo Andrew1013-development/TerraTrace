@@ -62,6 +62,32 @@ test('an event that does not belong to the current screen changes nothing', () =
   expect(caseReducer(initialState, { type: 'seeVerdict' })).toBe(initialState)
 })
 
+// Integration report, defect 1: a failed load needs a way back to the scene.
+test('changePlace after a failed load goes back to the scene and keeps the variable', () => {
+  const error = Object.assign(new Error('x'), { kind: 'network' as const })
+  const failed = { ...loadingCase, hunch: 'rise' as const, load: { status: 'error' as const, error } }
+  expect(caseReducer(failed, { type: 'changePlace' })).toEqual({
+    ...initialState,
+    screen: 'scene',
+    variable: v,
+    place: undefined,
+    hunch: undefined,
+  })
+})
+
+test('changePlace is ignored unless the evidence screen shows an error', () => {
+  const ready = { ...loadingCase, load: { status: 'ready' as const, series: sampleSeries } }
+  for (const s of [loadingCase, ready, initialState, { ...loadingCase, screen: 'verdict' as const }]) {
+    expect(caseReducer(s, { type: 'changePlace' })).toBe(s)
+  }
+})
+
+test('a late failure after changePlace is ignored', () => {
+  const error = Object.assign(new Error('x'), { kind: 'network' as const })
+  const back = caseReducer({ ...loadingCase, load: { status: 'error', error } }, { type: 'changePlace' })
+  expect(caseReducer(back, { type: 'failed', variable: v, place: p, error })).toBe(back)
+})
+
 // Navigation (rail steps, Previous and Next): moving back keeps answers; changing an answer clears what follows it.
 import { furthestStep } from './App'
 

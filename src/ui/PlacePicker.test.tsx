@@ -119,6 +119,13 @@ test('a region with no leads shows no leads section', async () => {
   expect(screen.queryByRole('region', { name: 'Leads' })).toBeNull()
 })
 
+// Integration report, defect 6.
+test('a region name written for a sentence starts with a capital in the list', () => {
+  const regions = [{ ...sampleRegions[0], name: 'the Sahel' }, sampleRegions[1]]
+  render(<PlacePicker variable={precipitation} regions={regions} leads={sampleLeads} onPick={vi.fn()} />)
+  expect(within(region()).getAllByRole('option').map((o) => o.textContent)).toEqual(['Choose a region', 'The Sahel', 'Arctic Canada'])
+})
+
 test('the map highlights the region chosen from the list, with no pin', async () => {
   const { user } = renderPicker()
   expect(map().getAttribute('data-highlight')).toBe('')
