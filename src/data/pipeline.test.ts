@@ -228,6 +228,28 @@ describe("6. Golden demo cases: the numbers Dev B cross-checked in Python (issue
   });
 });
 
+describe("6b. Demo sentences: what the video quotes (issue 17)", () => {
+  beforeEach(() => start());
+
+  // Dev C's decision in issue 17: region names carry "the" where English needs it.
+  test("the Tibetan Plateau case reads as the demo team was given it, in both toggle states", async () => {
+    const [catalog, regions] = await loadAll();
+    const c = data.demoCases.find((x) => x.id === "tibet-temperature")!;
+    const v = catalog.find((x) => x.id === c.variableId)!;
+    const s = await data.getSeries(v, c.place);
+    const say = (toggle: boolean) => getVerdict(analyze(s, toggle)!, v, placeName(c.place, regions)).text;
+    expect(say(true)).toBe("Air temperature in the Tibetan Plateau has risen by about 0.23 °C per decade, and the evidence is strong.");
+    expect(say(false)).toBe("We found no significant long-term trend in air temperature in the Tibetan Plateau. That is a real result: it has stayed within its normal ups and downs.");
+  });
+
+  test("every region name reads correctly after \"in\"", async () => {
+    const [, regions] = await loadAll();
+    // Dev C's table in issue 17 leaves only these two without "the".
+    const bare = new Set(["arctic-canada", "central-siberia"]);
+    for (const r of regions) expect(r.name.startsWith("the "), r.id).toBe(!bare.has(r.id));
+  });
+});
+
 describe("7. Failure paths, as the screens will see them (section 8)", () => {
   const t2m: Variable = {
     id: "T2M", name: "air temperature", definition: "Test only.", unit: "°C",
