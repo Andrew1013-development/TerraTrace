@@ -1,12 +1,13 @@
 import type { Question } from "../types";
 
 // Questions about what a person notices, never about instruments or datasets.
+// "{options}" is filled with the choices actually shown (questionText), so the text matches the buttons.
 // Tags are exact lower-case words that catalog.json must use too.
 // Every variable needs at least one tag from the first question.
 export const questions: Question[] = [
   {
     id: "sphere",
-    text: "Is your question about the air, water, land or living things?",
+    text: "Is your question about {options}?",
     options: [
       { label: "The air", tags: ["air"] },
       { label: "Water", tags: ["water"] },
@@ -26,7 +27,7 @@ export const questions: Question[] = [
   },
   {
     id: "wet",
-    text: "Is it rain, snow, or moisture in the air?",
+    text: "Is it {options}?",
     options: [
       { label: "Rain", tags: ["rain"] },
       { label: "Snow", tags: ["snow"] },
@@ -35,7 +36,7 @@ export const questions: Question[] = [
   },
   {
     id: "extreme",
-    text: "Are you curious about a usual day, or the hottest and coldest times?",
+    text: "Are you curious about {options}?",
     options: [
       { label: "A usual day", tags: ["average"] },
       { label: "The hottest part of the day", tags: ["maximum"] },

@@ -18,6 +18,7 @@ export type CaseState = {
   place?: Place
   hunch?: Hunch
   deseasonalized: boolean
+  period: { start: number; end: number } | null // the years analysed (issue 46); null = the full record
   load: { status: 'idle' | 'loading' | 'ready' | 'error'; series?: Series; error?: DataError }
 }
 
@@ -27,39 +28,73 @@ export type CaseEvent =
   | { type: 'pickPlace'; place: Place }
   | { type: 'confirm'; hunch: Hunch }
   | { type: 'change' }
+  | { type: 'goTo'; screen: Screen }
   | { type: 'seeVerdict' }
   | { type: 'restart' }
   | { type: 'toggle' }
+  | { type: 'setPeriod'; period: { start: number; end: number } | null }
   | { type: 'loaded'; variable: Variable; place: Place; series: Series }
   | { type: 'failed'; variable: Variable; place: Place; error: DataError }
 
-export const initialState: CaseState = { screen: 'clues', deseasonalized: true, load: { status: 'idle' } }
+export const initialState: CaseState = { screen: 'clues', deseasonalized: true, period: null, load: { status: 'idle' } }
+
+export const STEPS: Screen[] = ['clues', 'scene', 'brief', 'evidence', 'verdict']
+
+// How far the answers so far allow the user to go (an index into STEPS). Next and the rail stop here.
+export function furthestStep(s: CaseState): number {
+  if (!s.variable) return 0
+  if (!s.place) return 1
+  if (!s.hunch || s.load.status === 'idle') return 2
+  return s.load.status === 'ready' ? 4 : 3
+}
+
+const samePlace = (a: Place | undefined, b: Place) =>
+  !!a && (a.kind === 'region' ? b.kind === 'region' && a.id === b.id : b.kind === 'point' && a.lat === b.lat && a.lon === b.lon)
+
+const IDLE: CaseState['load'] = { status: 'idle' }
 
 // The transitions in architecture section 5. An event from the wrong screen is ignored.
 export function caseReducer(state: CaseState, event: CaseEvent): CaseState {
   switch (event.type) {
+    // Re-answering a step with the same answer keeps what follows; a different answer clears it.
     case 'chooseVariable':
-      return state.screen === 'clues' ? { ...state, screen: 'scene', variable: event.variable } : state
+      if (state.screen !== 'clues') return state
+      if (state.variable?.id === event.variable.id) return { ...state, screen: 'scene' }
+      return { ...state, screen: 'scene', variable: event.variable, place: undefined, hunch: undefined, period: null, load: IDLE }
     case 'openDemo':
       return state.screen === 'clues'
-        ? { ...state, screen: 'brief', variable: event.variable, place: event.place }
+        ? { ...state, screen: 'brief', variable: event.variable, place: event.place, hunch: undefined, period: null, load: IDLE }
         : state
     case 'pickPlace':
-      return state.screen === 'scene' ? { ...state, screen: 'brief', place: event.place } : state
+      if (state.screen !== 'scene') return state
+      if (samePlace(state.place, event.place)) return { ...state, screen: 'brief' }
+      return { ...state, screen: 'brief', place: event.place, hunch: undefined, period: null, load: IDLE }
     case 'confirm':
-      return state.screen === 'brief'
-        ? { ...state, screen: 'evidence', hunch: event.hunch, load: { status: 'loading' } }
-        : state
+      if (state.screen !== 'brief') return state
+      // The series depends only on the variable and place, so a loaded one is kept.
+      return {
+        ...state,
+        screen: 'evidence',
+        hunch: event.hunch,
+        load: state.load.status === 'ready' ? state.load : { status: 'loading' },
+      }
     case 'change':
       return state.screen === 'brief'
-        ? { ...state, screen: 'clues', variable: undefined, place: undefined, hunch: undefined }
+        ? { ...state, screen: 'clues', variable: undefined, place: undefined, hunch: undefined, period: null, load: IDLE }
         : state
+    case 'goTo': {
+      const to = STEPS.indexOf(event.screen)
+      return to <= furthestStep(state) && event.screen !== state.screen ? { ...state, screen: event.screen } : state
+    }
     case 'seeVerdict':
       return state.screen === 'evidence' ? { ...state, screen: 'verdict' } : state
     case 'restart':
       return state.screen === 'verdict' ? initialState : state
     case 'toggle':
       return { ...state, deseasonalized: !state.deseasonalized }
+    case 'setPeriod':
+      // Never touches load: the record is cut on the client, so changing the years never refetches.
+      return { ...state, period: event.period }
     case 'loaded':
     case 'failed': {
       // A response for a variable or place that is no longer selected is ignored (section 5).
@@ -107,6 +142,8 @@ export default function App() {
       variable={state.variable}
       placeName={state.place && placeName(state.place, regions)}
       hunch={state.hunch}
+      furthest={furthestStep(state)}
+      onGoTo={(screen) => dispatch({ type: 'goTo', screen })}
     >
       {files === undefined && <p role="status">Loading the case files…</p>}
       {files instanceof Error && (
@@ -154,6 +191,7 @@ function CurrentScreen({ state, dispatch, files: { catalog, regions, leads } }: 
           variable={state.variable}
           regions={regions}
           leads={leads}
+          place={state.place}
           onPick={(place) => dispatch({ type: 'pickPlace', place })}
         />
       )
@@ -164,6 +202,7 @@ function CurrentScreen({ state, dispatch, files: { catalog, regions, leads } }: 
         <CaseBrief
           variable={state.variable}
           placeName={placeName(state.place, regions)}
+          hunch={state.hunch}
           onConfirm={(hunch) => dispatch({ type: 'confirm', hunch })}
           onChange={() => dispatch({ type: 'change' })}
         />
@@ -173,7 +212,9 @@ function CurrentScreen({ state, dispatch, files: { catalog, regions, leads } }: 
         <Evidence
           load={state.load}
           deseasonalized={state.deseasonalized}
+          period={state.period}
           onToggle={() => dispatch({ type: 'toggle' })}
+          onPeriod={(period) => dispatch({ type: 'setPeriod', period })}
           onNext={() => dispatch({ type: 'seeVerdict' })}
         />
       )
@@ -186,6 +227,7 @@ function CurrentScreen({ state, dispatch, files: { catalog, regions, leads } }: 
           placeName={placeName(state.place, regions)}
           series={state.load.series}
           deseasonalized={state.deseasonalized}
+          period={state.period}
           hunch={state.hunch}
           regions={regions}
           onRestart={() => dispatch({ type: 'restart' })}

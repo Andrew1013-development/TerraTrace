@@ -7,13 +7,20 @@ import type { Hunch, Series } from '../types'
 import { VerdictView } from './VerdictView'
 
 // Real verdict module (pure); stats mocked so each test picks the TrendResult.
-vi.mock('../stats', () => ({ analyze: vi.fn(), countValid: vi.fn() }))
+vi.mock('../stats', async () => ({
+  analyze: vi.fn(),
+  countValid: vi.fn(),
+  // The real period functions (issue 46); only analyze and countValid are stubbed.
+  ...(({ selectableYears, validPeriod, slicePeriod }) => ({ selectableYears, validPeriod, slicePeriod }))(
+    await vi.importActual<typeof import('../stats')>('../stats'),
+  ),
+}))
 vi.mock('../data', () => ({ getSeries: vi.fn() }))
 vi.mock('./starBurst', () => ({ starBurst: vi.fn() }))
 
 const CAVEAT = 'Monthly values are often related to their neighbours, which can make a trend look more certain than it is.'
 
-function renderVerdict(hunch: Hunch = 'rise', deseasonalized = true) {
+function renderVerdict(hunch: Hunch = 'rise', deseasonalized = true, period: { start: number; end: number } | null = null) {
   const onRestart = vi.fn()
   render(
     <VerdictView
@@ -21,6 +28,7 @@ function renderVerdict(hunch: Hunch = 'rise', deseasonalized = true) {
       placeName="Sahel"
       series={sampleSeries}
       deseasonalized={deseasonalized}
+      period={period}
       hunch={hunch}
       regions={sampleRegions}
       onRestart={onRestart}
@@ -154,4 +162,33 @@ test('a late response for a region no longer chosen is ignored', async () => {
   finishArctic(arcticSeries)
   await new Promise((r) => setTimeout(r, 0))
   expect(screen.queryByText('Source: Synthetic Arctic source')).toBeNull()
+})
+
+test('with years chosen, the period verdict comes first and the full record sits beside it with the hunch line', () => {
+  renderVerdict('rise', true, { start: 2004, end: 2014 })
+  const cards = screen.getAllByRole('article')
+  expect(cards[0]).toHaveTextContent('air temperature · Sahel · 2004 to 2014')
+  expect(cards[1]).toHaveTextContent('air temperature · Sahel · 2000 to 2014')
+  expect(within(cards[0]).queryByText(/hunch/i)).toBeNull()
+  expect(cards[1].querySelector('.hunch-line')).not.toBeNull()
+  // The period verdict is computed on the cut record only.
+  expect(vi.mocked(analyze).mock.calls.some(([s]) => s.dates[0] === '2004-01' && s.dates.length === 132)).toBe(true)
+})
+
+test('without years chosen there is one verdict, with no years in it', () => {
+  renderVerdict()
+  const cards = screen.getAllByRole('article')
+  expect(cards).toHaveLength(1)
+  expect(cards[0]).toHaveTextContent('air temperature · Sahel')
+  expect(cards[0]).not.toHaveTextContent(/\d{4} to \d{4}/)
+})
+
+test('a second witness whose record cannot cover the chosen years shows the not-enough-data message', async () => {
+  const short: Series = { ...sampleSeries, placeId: 'arctic-canada', dates: sampleSeries.dates.slice(72), values: sampleSeries.values.slice(72) }
+  vi.mocked(getSeries).mockResolvedValue(short) // 2006 to 2014: cannot cover 2004 to 2014
+  renderVerdict('rise', true, { start: 2004, end: 2014 })
+  await userEvent.selectOptions(screen.getByRole('combobox', { name: 'Compare another region' }), 'Arctic Canada')
+  const cards = await screen.findAllByRole('article')
+  expect(cards).toHaveLength(3)
+  expect(cards[2]).toHaveTextContent('Not enough data for a verdict')
 })

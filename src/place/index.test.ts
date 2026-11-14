@@ -63,3 +63,41 @@ test('placeName never shows "-0.00" (D8)', () => {
   expect(placeName({ kind: "point", lat: -0.001, lon: -0.004 }, [])).toBe("the area around 0.00, 0.00");
   expect(placeName({ kind: "point", lat: -0.006, lon: 0 }, [])).toBe("the area around -0.01, 0.00");
 });
+
+// Scene map (Dev C, with the user's go-ahead): which region or country a typed point is in.
+import { countryAt, regionAt } from "./index";
+
+describe("regionAt", () => {
+  test("finds the prepared region whose box holds the point", () => {
+    expect(regionAt(10, 105.5, sampleRegions)?.id).toBe("mekong-delta");
+    expect(regionAt(14, 0, sampleRegions)?.id).toBe("sahel");
+  });
+  test("returns undefined outside every box", () => {
+    expect(regionAt(48.86, 2.35, sampleRegions)).toBeUndefined();
+  });
+  test("prefers the smallest box when boxes overlap", () => {
+    const big = { id: "big", name: "Big", bbox: [0, 100, 20, 120] as [number, number, number, number] };
+    expect(regionAt(10, 105.5, [big, ...sampleRegions])?.id).toBe("mekong-delta");
+  });
+});
+
+describe("countryAt", () => {
+  const square = (name: string, w: number, s: number) => ({
+    type: "Feature" as const,
+    properties: { name },
+    geometry: { type: "Polygon" as const, coordinates: [[[w, s], [w, s + 10], [w + 10, s + 10], [w + 10, s], [w, s]]] },
+  });
+  const countries = { type: "FeatureCollection" as const, features: [square("Squareland", 0, 40), square("Otherland", 20, 40)] };
+
+  test("names the country a point is in", () => {
+    expect(countryAt(45, 5, countries)).toBe("Squareland");
+    expect(countryAt(45, 25, countries)).toBe("Otherland");
+  });
+  test("returns undefined at sea", () => {
+    expect(countryAt(0, -30, countries)).toBeUndefined();
+  });
+});
+
+test("placeName uses a point's name when it has one", () => {
+  expect(placeName({ kind: "point", lat: 48.86, lon: 2.35, name: "one spot in France" }, sampleRegions)).toBe("one spot in France");
+});
