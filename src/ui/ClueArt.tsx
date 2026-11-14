@@ -1,6 +1,5 @@
 // Animated illustrations for clue answers. Decorative only (aria-hidden); the button text carries the meaning.
-// Each answer's tags pick a sequence of art; several pieces cycle (fire, then a snowflake). Motion lives in app.css
-// and switches off under prefers-reduced-motion.
+// Motion lives in app.css and switches off under prefers-reduced-motion.
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 
 export type ArtName =
@@ -9,42 +8,80 @@ export type ArtName =
   | 'snowflake'
   | 'wind'
   | 'mountain'
+  | 'cracked'
   | 'wave'
   | 'leaf'
   | 'rain'
   | 'mist'
   | 'sun'
-  | 'cloud'
+  | 'clouds'
+  | 'tree-gust'
+  | 'tree-calm'
   | 'thermo-mid'
   | 'thermo-high'
   | 'thermo-low'
 
-// Tags come from the clue questions and the catalog (exact lower-case words).
+// "It feels hotter or colder": one piece of art per word, in the order the words appear.
+const WORD_ART: Record<string, ArtName> = {
+  hotter: 'fire',
+  colder: 'snowflake',
+  wetter: 'rain',
+  drier: 'cracked',
+  windier: 'tree-gust',
+  calmer: 'tree-calm',
+  sunnier: 'sun',
+  cloudier: 'clouds',
+}
+
+// Tags (exact lower-case words shared by the questions and the catalog).
 const TAG_ART: Record<string, ArtName[]> = {
-  temperature: ['fire', 'snowflake'],
   air: ['wind'],
-  wind: ['wind'],
-  land: ['mountain'],
   water: ['wave'],
+  land: ['mountain'],
   life: ['leaf'],
   rain: ['rain'],
   snow: ['snowflake'],
   humidity: ['mist'],
-  soil: ['mountain'],
+  wind: ['tree-gust', 'tree-calm'],
   sun: ['sun'],
-  cloud: ['cloud'],
+  cloud: ['clouds'],
+  temperature: ['fire', 'snowflake'],
   average: ['thermo-mid'],
   maximum: ['thermo-high'],
   minimum: ['thermo-low'],
 }
 
-export function artFor(tags: string[]): ArtName[] {
-  const names = tags.flatMap((t) => TAG_ART[t] ?? [])
-  const unique = [...new Set(names)].slice(0, 3)
-  return unique.length ? unique : ['question']
+export function artForOption(option: { label: string; tags: string[] }): ArtName[] {
+  const words = option.label.toLowerCase().match(/[a-z]+/g) ?? []
+  const fromWords = words.map((w) => WORD_ART[w]).filter((a): a is ArtName => !!a)
+  if (fromWords.length) return fromWords
+  return option.tags.map((t) => TAG_ART[t]).find(Boolean) ?? ['question']
 }
 
-const CYCLE_MS = 1700
+// A variable shows one piece of art from its most specific tag; the broad air/water/land/life tags come last.
+const VARIABLE_ART: [string, ArtName][] = [
+  ['maximum', 'thermo-high'],
+  ['minimum', 'thermo-low'],
+  ['average', 'thermo-mid'],
+  ['temperature', 'thermo-mid'],
+  ['rain', 'rain'],
+  ['snow', 'snowflake'],
+  ['humidity', 'mist'],
+  ['wind', 'wind'],
+  ['sun', 'sun'],
+  ['cloud', 'clouds'],
+  ['air', 'wind'],
+  ['water', 'wave'],
+  ['land', 'mountain'],
+  ['life', 'leaf'],
+]
+
+export function artForVariable(tags: string[]): ArtName[] {
+  const hit = VARIABLE_ART.find(([tag]) => tags.includes(tag))
+  return [hit ? hit[1] : 'question']
+}
+
+const CYCLE_MS = 2200
 const SWAP_MS = 240
 
 // Shows `names` (cycling when there are several); the outgoing piece shrinks and fades as the next grows in.
@@ -91,6 +128,36 @@ function Svg({ children }: { children: ReactNode }) {
   )
 }
 
+function Tree({ gust }: { gust: boolean }) {
+  return (
+    <Svg>
+      <path d="M14 104h92" stroke="#7A9B5A" strokeWidth="5" strokeLinecap="round" />
+      <g className={gust ? 'a-tree-gust' : 'a-tree-calm'}>
+        <path d="M58 104c1-14 0-28 2-40" stroke="#6B4423" strokeWidth="8" strokeLinecap="round" fill="none" />
+        <g className={gust ? 'a-canopy-gust' : 'a-canopy-calm'}>
+          <circle cx="60" cy="46" r="22" fill="#3FA34D" />
+          <circle cx="44" cy="54" r="15" fill="#4DB85B" />
+          <circle cx="76" cy="54" r="15" fill="#358F42" />
+          <circle cx="60" cy="30" r="14" fill="#4DB85B" />
+        </g>
+      </g>
+      {gust && (
+        <g className="a-blown" fill="#4DB85B">
+          <ellipse cx="80" cy="40" rx="4" ry="2" />
+          <ellipse cx="74" cy="60" rx="3.5" ry="1.8" />
+          <ellipse cx="86" cy="52" rx="3" ry="1.6" />
+        </g>
+      )}
+      {gust && (
+        <g stroke="#9CC8F0" strokeWidth="3" strokeLinecap="round" fill="none">
+          <path className="a-streak a-streak-1" pathLength={100} d="M4 40h26" />
+          <path className="a-streak a-streak-2" pathLength={100} d="M2 70h22" />
+        </g>
+      )}
+    </Svg>
+  )
+}
+
 function Art({ name }: { name: ArtName }) {
   switch (name) {
     case 'fire':
@@ -112,7 +179,8 @@ function Art({ name }: { name: ArtName }) {
     case 'snowflake':
       return (
         <Svg>
-          <g className="a-spin" stroke="#7CC4FF" strokeWidth="6" strokeLinecap="round" fill="none">
+          <g className="a-spin-slow" stroke="#7CC4FF" strokeWidth="6" strokeLinecap="round" fill="none">
+            <circle cx="60" cy="60" r="50" stroke="none" fill="none" />
             {[0, 60, 120].map((r) => (
               <g key={r} transform={`rotate(${r} 60 60)`}>
                 <path d="M60 16v88" />
@@ -124,22 +192,46 @@ function Art({ name }: { name: ArtName }) {
         </Svg>
       )
     case 'wind':
+      // Each gust runs out to its curl and back again, at its own speed.
       return (
         <Svg>
-          <g className="a-blow" stroke="#5AB0F0" strokeWidth="7" strokeLinecap="round" fill="none">
-            <path d="M14 44h58a12 12 0 1 0-12-12" />
-            <path d="M14 64h76a12 12 0 1 1-12 12" />
-            <path d="M14 84h40" />
+          <g stroke="#5AB0F0" strokeWidth="7" strokeLinecap="round" fill="none">
+            <path className="a-gust a-gust-1" pathLength={100} d="M12 44h62a12 12 0 1 0-12-12" />
+            <path className="a-gust a-gust-2" pathLength={100} d="M12 64h80a12 12 0 1 1-12 12" />
+            <path className="a-gust a-gust-3" pathLength={100} d="M20 84h44a9 9 0 1 0-9-9" />
           </g>
         </Svg>
       )
     case 'mountain':
       return (
         <Svg>
-          <g className="a-crackle">
-            <path d="M8 100l36-56 18 26 14-18 36 48z" fill="#8B5A2B" />
-            <path d="M44 44l-9 14 9-4 7 8z" fill="#F2E6D8" />
-            <path d="M38 100l10-18-6-8 9-12M80 100l-6-14 8-10" stroke="#3E2410" strokeWidth="3" fill="none" className="a-crack" />
+          <path d="M8 100l36-56 18 26 14-18 36 48z" fill="#8B5A2B" />
+          <path d="M44 44l-9 14 9-4 7 8z" fill="#F2E6D8" />
+          <path
+            className="a-crack"
+            pathLength={100}
+            d="M38 100l10-18-6-8 9-12M80 100l-6-14 8-10"
+            stroke="#3E2410"
+            strokeWidth="3"
+            fill="none"
+          />
+        </Svg>
+      )
+    case 'cracked':
+      return (
+        <Svg>
+          <circle className="a-heat" cx="92" cy="26" r="11" fill="#FFC93C" />
+          <path d="M8 62l104 0 0 40-104 0z" fill="#C8955C" />
+          <path d="M8 62h104" stroke="#A8743E" strokeWidth="3" />
+          <g stroke="#6B4423" strokeWidth="3" strokeLinecap="round" fill="none">
+            <path className="a-crack" pathLength={100} d="M22 62l8 14-6 12 4 14" />
+            <path className="a-crack a-crack-2" pathLength={100} d="M30 76l20 4 10-12 16 6 6-16" />
+            <path className="a-crack a-crack-3" pathLength={100} d="M50 80l2 22M76 74l12 14 18-4M88 88l-4 14" />
+          </g>
+          <g className="a-dust" fill="#D9B07E">
+            <circle cx="40" cy="56" r="2.5" />
+            <circle cx="70" cy="58" r="2" />
+            <circle cx="96" cy="56" r="2.5" />
           </g>
         </Svg>
       )
@@ -175,36 +267,36 @@ function Art({ name }: { name: ArtName }) {
     case 'mist':
       return (
         <Svg>
-          <g className="a-drift" stroke="#8FB3E0" strokeWidth="7" strokeLinecap="round" fill="none">
-            <path d="M18 42c12-8 22 8 34 0s22 8 34 0 14 0 16 0" />
-            <path d="M24 62c12-8 22 8 34 0s22 8 34 0" opacity=".75" />
-            <path d="M18 82c12-8 22 8 34 0s22 8 34 0 14 0 16 0" opacity=".5" />
+          <g stroke="#8FB3E0" strokeWidth="7" strokeLinecap="round" fill="none">
+            <path className="a-drift" d="M18 42c12-8 22 8 34 0s22 8 34 0 14 0 16 0" />
+            <path className="a-drift a-drift-2" d="M24 62c12-8 22 8 34 0s22 8 34 0" opacity=".75" />
+            <path className="a-drift a-drift-3" d="M18 82c12-8 22 8 34 0s22 8 34 0 14 0 16 0" opacity=".5" />
           </g>
         </Svg>
       )
     case 'sun':
       return (
         <Svg>
-          <g className="a-spin" stroke="#F5B400" strokeWidth="6" strokeLinecap="round">
+          <g className="a-spin-slow" stroke="#F5B400" strokeWidth="6" strokeLinecap="round">
             {Array.from({ length: 8 }, (_, i) => (
-              <path key={i} d="M60 10v14" transform={`rotate(${i * 45} 60 60)`} />
+              <path key={i} d="M60 8v14" transform={`rotate(${i * 45} 60 60)`} />
             ))}
           </g>
-          <circle cx="60" cy="60" r="24" fill="#FFC93C" />
+          <circle className="a-pulse" cx="60" cy="60" r="24" fill="#FFC93C" />
         </Svg>
       )
-    case 'cloud':
+    case 'clouds':
       return (
         <Svg>
-          <path
-            className="a-drift"
-            d="M32 86a20 20 0 0 1 2-40 26 26 0 0 1 50-4 20 20 0 0 1 6 44z"
-            fill="#E3E9F3"
-            stroke="#9AA7C4"
-            strokeWidth="4"
-          />
+          <path className="a-drift a-drift-3" d="M20 40a9 9 0 0 1 1-18 12 12 0 0 1 22-2 9 9 0 0 1 3 20z" fill="#EEF2F8" stroke="#9AA7C4" strokeWidth="3" />
+          <path className="a-drift" d="M32 86a20 20 0 0 1 2-40 26 26 0 0 1 50-4 20 20 0 0 1 6 44z" fill="#E3E9F3" stroke="#9AA7C4" strokeWidth="4" />
+          <path className="a-drift a-drift-2" d="M78 104a8 8 0 0 1 1-16 11 11 0 0 1 20-2 8 8 0 0 1 3 18z" fill="#EEF2F8" stroke="#9AA7C4" strokeWidth="3" />
         </Svg>
       )
+    case 'tree-gust':
+      return <Tree gust />
+    case 'tree-calm':
+      return <Tree gust={false} />
     case 'thermo-mid':
     case 'thermo-high':
     case 'thermo-low': {

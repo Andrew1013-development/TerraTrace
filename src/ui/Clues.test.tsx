@@ -151,3 +151,19 @@ test('each solved case button calls onDemo with that case', async () => {
   await user.click(within(solved).getByRole('button', { name: 'Is the Arctic getting wetter?' }))
   expect(onDemo).toHaveBeenLastCalledWith(demoCases[0])
 })
+
+test('leaving with the mouse falls back to the choice that has keyboard focus', async () => {
+  const { user } = renderClues()
+  act(() => screen.getByRole('button', { name: 'Wetter or drier' }).focus())
+  await user.hover(screen.getByRole('button', { name: 'Hotter or colder' }))
+  expect(art()).toBe('fire')
+  await user.unhover(screen.getByRole('button', { name: 'Hotter or colder' }))
+  expect(art()).toBe('rain')
+})
+
+test('after an answer, focusing a choice on the next question shows its art', async () => {
+  const { user } = renderClues()
+  await user.click(screen.getByRole('button', { name: 'Hotter or colder' }))
+  act(() => screen.getByRole('button', { name: 'The air' }).focus())
+  expect(art()).toBe('wind')
+})

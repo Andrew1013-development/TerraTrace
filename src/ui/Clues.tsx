@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { liveOptions, narrow, nextQuestion, questions } from '../clues'
-import { artFor, ClueArt } from './ClueArt'
+import { artForOption, artForVariable, ClueArt, type ArtName } from './ClueArt'
 import type { DemoCase, Variable } from '../types'
 import { PrimaryButton } from './PrimaryButton'
 import { ScreenHeading } from './ScreenHeading'
@@ -16,7 +16,9 @@ export function Clues({ catalog, demoCases, onVariable, onDemo }: CluesProps) {
   const [suspects, setSuspects] = useState(catalog)
   const [asked, setAsked] = useState<string[]>([])
   const [moves, setMoves] = useState(0) // answers so far
-  const [hovered, setHovered] = useState<string[]>() // tags of the hovered or focused choice
+  // Art for the choice under the mouse, and for the choice with keyboard focus; the mouse wins when both.
+  const [hovered, setHovered] = useState<ArtName[]>()
+  const [focused, setFocused] = useState<ArtName[]>()
   const [popping, setPopping] = useState(false)
   const question = nextQuestion(suspects, asked, questions)
   const left = suspects.length
@@ -33,22 +35,27 @@ export function Clues({ catalog, demoCases, onVariable, onDemo }: CluesProps) {
   // A click first squeezes and pops the illustration, then applies; without motion it applies at once.
   const withPop = (apply: () => void) => {
     if (popping) return
+    // The clicked button is replaced without a mouse-leave, so its art is cleared here.
+    const done = () => {
+      setHovered(undefined)
+      setFocused(undefined)
+      apply()
+    }
     const motion = typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: no-preference)').matches
-    if (!motion) return apply()
+    if (!motion) return done()
     setPopping(true)
     setTimeout(() => {
       setPopping(false)
-      setHovered(undefined)
-      apply()
+      done()
     }, 320)
   }
-  const hover = (tags: string[]) => ({
-    onMouseEnter: () => setHovered(tags),
-    onFocus: () => setHovered(tags),
+  const hover = (art: ArtName[]) => ({
+    onMouseEnter: () => setHovered(art),
+    onFocus: () => setFocused(art),
     onMouseLeave: () => !popping && setHovered(undefined),
-    onBlur: () => !popping && setHovered(undefined),
+    onBlur: () => !popping && setFocused(undefined),
   })
-  const art = hovered ? artFor(hovered) : left === 1 ? artFor(suspects[0].tags) : artFor([])
+  const art = hovered ?? focused ?? (left === 1 && !question ? artForVariable(suspects[0].tags) : (['question'] as ArtName[]))
 
   return (
     <section className="clues">
@@ -68,7 +75,7 @@ export function Clues({ catalog, demoCases, onVariable, onDemo }: CluesProps) {
                   <button
                     key={o.label}
                     type="button"
-                    {...hover(o.tags)}
+                    {...hover(artForOption(o))}
                     onClick={() =>
                       withPop(() => {
                         setSuspects(narrow(suspects, o))
@@ -98,7 +105,7 @@ export function Clues({ catalog, demoCases, onVariable, onDemo }: CluesProps) {
               </p>
               <div className="options">
                 {suspects.map((v) => (
-                  <button key={v.id} type="button" {...hover(v.tags)} onClick={() => withPop(() => onVariable(v))}>
+                  <button key={v.id} type="button" {...hover(artForVariable(v.tags))} onClick={() => withPop(() => onVariable(v))}>
                     {v.name}
                   </button>
                 ))}
