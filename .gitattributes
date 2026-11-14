@@ -1,0 +1,2 @@
+# JSON is written with LF by the data scripts; keep it LF everywhere, so Windows shows no false diffs (D14).
+*.json text eol=lf
