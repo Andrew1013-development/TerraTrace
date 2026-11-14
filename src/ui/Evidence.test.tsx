@@ -13,7 +13,9 @@ vi.mock('../stats', async () => ({
 }))
 // The stand-in chart reports which months it was given.
 vi.mock('./Chart', () => ({
-  Chart: (p: { series: { dates: string[] } }) => <figure aria-label={`chart ${p.series.dates[0]} to ${p.series.dates.at(-1)}`} />,
+  Chart: (p: { series: { dates: string[] }; children?: React.ReactNode }) => (
+    <figure aria-label={`chart ${p.series.dates[0]} to ${p.series.dates.at(-1)}`}>{p.children}</figure>
+  ),
 }))
 vi.mock('./starBurst', () => ({ starBurst: vi.fn() }))
 

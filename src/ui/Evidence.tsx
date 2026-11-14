@@ -43,7 +43,12 @@ export function Evidence({ load, deseasonalized, period, onToggle, onPeriod, onN
       {load.status === 'ready' && series && shown && (
         <>
           <div className="evidence-body">
-            <Chart series={shown} deseasonalized={deseasonalized} />
+            <Chart series={shown} deseasonalized={deseasonalized}>
+              <label className="toggle">
+                <input type="checkbox" checked={deseasonalized} onChange={onToggle} />
+                Remove the seasonal cycle
+              </label>
+            </Chart>
 
             <div className="card evidence-side">
               {years.length > 1 && (
@@ -118,10 +123,6 @@ export function Evidence({ load, deseasonalized, period, onToggle, onPeriod, onN
                 </p>
               )}
 
-              <label className="toggle">
-                <input type="checkbox" checked={deseasonalized} onChange={onToggle} />
-                Remove the seasonal cycle
-              </label>
             </div>
           </div>
 

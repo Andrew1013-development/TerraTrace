@@ -1,11 +1,11 @@
 import * as Plot from '@observablehq/plot'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { deseasonalize } from '../stats'
 import type { Series } from '../types'
 
-type ChartProps = { series: Series; deseasonalized: boolean }
+type ChartProps = { series: Series; deseasonalized: boolean; children?: ReactNode } // children: controls shown in the chart's box
 
-export function Chart({ series, deseasonalized }: ChartProps) {
+export function Chart({ series, deseasonalized, children }: ChartProps) {
   const ref = useRef<HTMLDivElement>(null)
   const [width, setWidth] = useState(720)
   const yLabel = deseasonalized ? `Difference from the usual value for that month (${series.unit})` : series.unit
@@ -65,6 +65,7 @@ export function Chart({ series, deseasonalized }: ChartProps) {
       <figcaption>
         <span className="underline underline-red">Line: straight-line fit to the points shown.</span>
       </figcaption>
+      {children}
     </figure>
   )
 }
