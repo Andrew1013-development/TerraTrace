@@ -133,7 +133,7 @@ def main():
             series = region_series(variable, region, fetch)
             out = DATA / "series" / variable["id"] / f"{region['id']}.json"
             out.parent.mkdir(parents=True, exist_ok=True)
-            out.write_text(to_json(series) + "\n", "utf-8")
+            out.write_text(to_json(series) + "\n", "utf-8", newline="\n")
             valid = sum(v is not None for v in series["values"])
             print(f"{region['id']} {variable['id']}: {valid}/{len(series['values'])} valid months", flush=True)
     print(f"Done: {STATS['calls']} POWER calls, {STATS['rate_limited']} answered HTTP 429")
