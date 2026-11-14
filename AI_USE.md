@@ -19,3 +19,4 @@ One line per meaningful use of AI tools. No AI model runs in the app.
 | Pipeline test | Dev A | Claude Code | Designed and wrote the backend pipeline test, the shared test fetch helper and the deploy test step, and mutation-checked each stage | Dev A |
 | Task A6 | Dev A | Claude Code | Surveyed POWER parameters by live call, drafted the 8 new definitions and tags, wrote the catalog tests and reran the precompute script | Dev A |
 | Task B3 | Dev B | Claude Code | Wrote the verdict stub, tests and implementation in src/verdict/ from ARCHITECTURE.md section 7.2; wording copied exactly | Dev B, then Dev C line by line |
+| Pipeline test, verdict stage | Dev A | Claude Code | Added the verdict stage and the demo-case verdict kinds to the pipeline test, and mutation-checked them | Dev A |
