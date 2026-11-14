@@ -13,3 +13,4 @@ One line per meaningful use of AI tools. No AI model runs in the app.
 | Task A4 | Dev A | Claude Code | Wrote the clue engine tests, the engine and the first draft of the four questions | Dev A |
 | Task A5 | Dev A | Claude Code | Wrote the precompute tests and script, and drafted the 12 region boxes | Dev A |
 | Task B2 | Dev B | Claude Code | Wrote scripts/make_stats_fixtures.py, the statistics stub, tests and implementation in src/stats/ from ARCHITECTURE.md section 7.1 | Dev B, then Dev C line by line |
+| Task B4 | Dev B | Claude Code | Wrote the place helpers stub, tests and implementation in src/place/ from ARCHITECTURE.md sections 4.4 and 8 | Dev B |
