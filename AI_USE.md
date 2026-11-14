@@ -29,3 +29,4 @@ One line per meaningful use of AI tools. No AI model runs in the app.
 | Task C7 | Dev C | Claude Code | Wrote the second-witness comparison and its tests on the verdict screen | Dev C |
 | Issue 22 | Dev A | Claude Code | Wrote the failing tests, made region series name their product and version, and reran the precompute script from cache | Dev A |
 | Issue 23 | Dev A | Claude Code | Wrote the failing test and renamed TS to "surface temperature" to match its land-or-sea definition | Dev A |
+| Region names | Dev A | Claude Code | Applied Dev C's region names from issue 17 and added pipeline tests for them and the Tibet demo sentences | Dev A |
