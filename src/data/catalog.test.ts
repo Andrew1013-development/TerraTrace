@@ -79,3 +79,10 @@ test("TS is named for land and sea, as its definition says (#23)", () => {
   expect(ts.definition).toMatch(/land or sea/);
   expect(ts.name).toBe("surface temperature");
 });
+
+test("CERES variables start in 2001, so no series mixes SRB and SYN1deg (D4)", () => {
+  // Before 2001, POWER fills these from SRB, a different product (checked live in task A6).
+  const ceres = catalog.filter((v) => v.source.includes("CERES SYN1deg"));
+  expect(ceres.length).toBeGreaterThan(0);
+  for (const v of ceres) expect(v.startYear, v.id).toBeGreaterThanOrEqual(2001);
+});
