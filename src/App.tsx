@@ -1,4 +1,4 @@
-import { useReducer } from 'react'
+import { useEffect, useReducer } from 'react'
 import { sampleCatalog, sampleRegions } from './fixtures'
 import type { DemoCase, Hunch, Place, Series, Variable } from './types'
 import { CaseBrief } from './ui/CaseBrief'
@@ -7,6 +7,8 @@ import { Evidence } from './ui/Evidence'
 import { PlacePicker } from './ui/PlacePicker'
 import { Shell } from './ui/Shell'
 import { VerdictView } from './ui/VerdictView'
+// shortcut: temporary loader until Task A2 merges; switch this import to './data' then.
+import { getSeries } from './ui/tempSeries'
 import './styles/app.css'
 
 export type Screen = 'clues' | 'scene' | 'brief' | 'evidence' | 'verdict'
@@ -29,6 +31,9 @@ export type CaseEvent =
   | { type: 'change' }
   | { type: 'seeVerdict' }
   | { type: 'restart' }
+  | { type: 'toggle' }
+  | { type: 'loaded'; variable: Variable; place: Place; series: Series }
+  | { type: 'failed'; variable: Variable; place: Place; error: Error }
 
 export const initialState: CaseState = { screen: 'clues', deseasonalized: true, load: { status: 'idle' } }
 
@@ -55,6 +60,16 @@ export function caseReducer(state: CaseState, event: CaseEvent): CaseState {
       return state.screen === 'evidence' ? { ...state, screen: 'verdict' } : state
     case 'restart':
       return state.screen === 'verdict' ? initialState : state
+    case 'toggle':
+      return { ...state, deseasonalized: !state.deseasonalized }
+    case 'loaded':
+    case 'failed': {
+      // A response for a variable or place that is no longer selected is ignored (section 5).
+      if (event.variable !== state.variable || event.place !== state.place) return state
+      return event.type === 'loaded'
+        ? { ...state, load: { status: 'ready', series: event.series } }
+        : { ...state, load: { status: 'error', error: event.error } }
+    }
   }
 }
 
@@ -74,6 +89,16 @@ function tempPlaceName(place: Place | undefined): string | undefined {
 
 export default function App() {
   const [state, dispatch] = useReducer(caseReducer, initialState)
+  const { variable, place } = state
+  const loading = state.load.status === 'loading'
+
+  useEffect(() => {
+    if (!loading || !variable || !place) return
+    getSeries(variable, place).then(
+      (series) => dispatch({ type: 'loaded', variable, place, series }),
+      (error: Error) => dispatch({ type: 'failed', variable, place, error }),
+    )
+  }, [loading, variable, place])
 
   return (
     <Shell
@@ -111,7 +136,14 @@ function CurrentScreen({ state, dispatch }: { state: CaseState; dispatch: (e: Ca
         />
       )
     case 'evidence':
-      return <Evidence onNext={() => dispatch({ type: 'seeVerdict' })} />
+      return (
+        <Evidence
+          load={state.load}
+          deseasonalized={state.deseasonalized}
+          onToggle={() => dispatch({ type: 'toggle' })}
+          onNext={() => dispatch({ type: 'seeVerdict' })}
+        />
+      )
     case 'verdict':
       return <VerdictView onRestart={() => dispatch({ type: 'restart' })} />
   }

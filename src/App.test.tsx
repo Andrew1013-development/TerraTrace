@@ -1,6 +1,15 @@
 import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import App from './App'
+import { sampleResult, sampleSeries } from './fixtures'
+
+vi.mock('./stats', () => ({
+  analyze: vi.fn(() => sampleResult),
+  countValid: vi.fn(() => 180),
+  deseasonalize: vi.fn(() => []),
+}))
+vi.mock('./ui/Chart', () => ({ Chart: () => <figure aria-label="chart" /> }))
+vi.mock('./ui/tempSeries', () => ({ getSeries: vi.fn(() => Promise.resolve(sampleSeries)) }))
 
 const stepFor: Record<string, string> = {
   'Gather the clues': 'Clues',
@@ -34,7 +43,7 @@ test('walks clues, scene, brief, evidence, verdict and back to clues', async () 
   await user.click(screen.getByRole('button', { name: 'Yes, show me the evidence' }))
 
   await expectScreen('The evidence')
-  await user.click(screen.getByRole('button', { name: 'See the verdict' }))
+  await user.click(await screen.findByRole('button', { name: 'See the verdict' }))
 
   await expectScreen('The verdict')
   await user.click(screen.getByRole('button', { name: 'Open a new case' }))
