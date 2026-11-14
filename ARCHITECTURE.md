@@ -171,6 +171,8 @@ export function validPeriod(series: Series, start: number, end: number): boolean
 export function slicePeriod(series: Series, start: number, end: number): Series;
 ```
 
+**Custom period (issue 46).** A period is whole years. `selectableYears` lists the years that can start or end one: all 12 months present with a value, so an incomplete year (2026 today) is never offered. `validPeriod` is the only home of the rule "both ends selectable, at least 10 years" (10 complete years are the 120 months a verdict needs). `slicePeriod` keeps January of the start year to December of the end year and leaves every other field unchanged; it does not validate. The record is fetched in full and cut on the client, so a period never refetches, and `analyze(slicePeriod(...), toggle)` recomputes everything on the slice, the seasonal climatology included.
+
 ### 4.6 Verdict (`src/verdict/index.ts`, Dev B)
 
 ```ts
@@ -309,6 +311,8 @@ Significance level 0.05. "Excludes 0" means both ends of `ci95` are above 0, or 
 `mkP` of exactly 0.05 is not significant. An interval that touches 0 does not exclude it.
 
 **Wording.** `{rate}` is the absolute `slopePerDecade` from `formatNumber`. When it rounds to "0", the `mixed` sentence leaves out its rate clause: "{Name} in {place} may be changing, but our two checks disagree. Treat this as uncertain."
+
+**Years (issue 46).** When `getVerdict` is given `years`, the sentence below begins "From {start} to {end}, " and its first letter is lowered: "From 1995 to 2025, air temperature in the Sahel has risen by about …", "From 1995 to 2025, we found no significant long-term trend in …". Without `years` the sentence is exactly as below; the default, full-record view never passes them, so its wording does not change.
 
 | `kind` | `text` |
 |---|---|
