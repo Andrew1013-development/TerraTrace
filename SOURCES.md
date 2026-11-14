@@ -45,4 +45,19 @@ Versions are from `package.json`; licences are from each package's own `package.
 
 ## Lead sources
 
-None yet.
+Each page was opened on 2026-11-14 and supports its lead in `public/data/leads.json`. Lead text is paraphrased.
+
+| Region | Page | Provider | URL |
+|---|---|---|---|
+| Arctic Canada | The Arctic is Getting Rainier (2024) | NASA Earth Observatory | https://science.nasa.gov/earth/earth-observatory/the-arctic-is-getting-rainier-152575/ |
+| Sahel | Vegetation and Rainfall in the Sahel (2007) | NASA Earth Observatory | https://science.nasa.gov/earth/earth-observatory/vegetation-and-rainfall-in-the-sahel-7277/ |
+| Mekong Delta | Mekong Turns from Brown to Blue-Green (2020) | NASA Earth Observatory | https://science.nasa.gov/earth/earth-observatory/mekong-turns-from-brown-to-blue-green-146209/ |
+| Central Amazon | Drought on the Rio Negro (2023) | NASA Earth Observatory | https://science.nasa.gov/earth/earth-observatory/drought-on-the-rio-negro-151961/ |
+| Tibetan Plateau | Black Carbon Deposits on Himalayan Ice Threaten Earth's "Third Pole" (2009) | NASA Goddard Institute for Space Studies | https://www.giss.nasa.gov/research/news/20091214/ |
+| Iberian Peninsula | Spain Browned by Drought (2023) | NASA Earth Observatory | https://science.nasa.gov/earth/earth-observatory/spain-browned-by-drought-151366/ |
+| US Great Plains | Dried Out Vegetation Across America (2012) | NASA Earth Observatory | https://science.nasa.gov/earth/earth-observatory/dried-out-vegetation-across-america-79316/ |
+| Murray-Darling Basin | Boom-and-Bust Water Supplies in Southeast Australia (2016) | NASA Earth Observatory | https://science.nasa.gov/earth/earth-observatory/boom-and-bust-water-supplies-in-southeast-australia-88292/ |
+| Antarctic Peninsula | The Most Studied Peninsula on Antarctica (2017) | NASA Earth Observatory | https://science.nasa.gov/earth/earth-observatory/the-most-studied-peninsula-on-antarctica-89717/ |
+| East African Highlands | Failed Rainy Seasons Create Food Emergency in Eastern Africa (2022) | NASA Earth Observatory | https://science.nasa.gov/earth/earth-observatory/failed-rainy-seasons-create-food-emergency-in-eastern-africa-149294/ |
+
+No lead for Sahara or Central Siberia: no NASA page found that supports one for those boxes.

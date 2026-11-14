@@ -12,3 +12,4 @@ One line per meaningful use of AI tools. No AI model runs in the app.
 | Task A3 | Dev A | Claude Code | Wrote the loader tests and loaders, and drafted the starter catalog definitions (checked against live POWER calls) and regions | Dev A |
 | Task A4 | Dev A | Claude Code | Wrote the clue engine tests, the engine and the first draft of the four questions | Dev A |
 | Task A5 | Dev A | Claude Code | Wrote the precompute tests and script, and drafted the 12 region boxes | Dev A |
+| Task B5 | Dev B | Claude Code | Searched NASA pages, drafted the region leads in public/data/leads.json and opened every source page to confirm it supports its lead; listed them in SOURCES.md | Claude Code opened each source; Dev B to confirm |
