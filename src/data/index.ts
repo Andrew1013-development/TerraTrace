@@ -14,16 +14,31 @@ export class DataError extends Error {
   }
 }
 
+// One promise per key, dropped when it rejects so a retry can succeed.
+const cache = new Map<string, Promise<unknown>>();
+function memo<T>(key: string, load: () => Promise<T>): Promise<T> {
+  let hit = cache.get(key) as Promise<T> | undefined;
+  if (!hit) {
+    hit = load();
+    cache.set(key, hit);
+    hit.catch(() => cache.delete(key));
+  }
+  return hit;
+}
+
+const staticFile = (path: string) => `${import.meta.env.BASE_URL}data/${path}`;
+const loadFile = <T,>(name: string) => memo(name, () => fetchJson(staticFile(name)) as Promise<T>);
+
 export function loadCatalog(): Promise<Variable[]> {
-  throw new Error("not implemented");
+  return loadFile("catalog.json");
 }
 
 export function loadRegions(): Promise<Region[]> {
-  throw new Error("not implemented");
+  return loadFile("regions.json");
 }
 
 export function loadLeads(): Promise<Lead[]> {
-  throw new Error("not implemented");
+  return loadFile("leads.json");
 }
 
 const POWER_URL = "https://power.larc.nasa.gov/api/temporal/monthly/point";
@@ -75,24 +90,16 @@ async function loadPoint(variable: Variable, lat: string, lon: string, placeId: 
   };
 }
 
-const cache = new Map<string, Promise<Series>>();
-
 export function getSeries(variable: Variable, place: Place): Promise<Series> {
   // Round once, so the request and the cache key always agree.
   const lat = place.kind === "point" ? place.lat.toFixed(2) : "";
   const lon = place.kind === "point" ? place.lon.toFixed(2) : "";
   const placeId = place.kind === "region" ? place.id : `point:${lat},${lon}`;
-  const key = `${variable.id}|${placeId}`;
-
-  let hit = cache.get(key);
-  if (!hit) {
-    hit = place.kind === "region"
-      ? (fetchJson(`${import.meta.env.BASE_URL}data/series/${variable.id}/${place.id}.json`) as Promise<Series>)
-      : loadPoint(variable, lat, lon, placeId);
-    cache.set(key, hit);
-    hit.catch(() => cache.delete(key));
-  }
-  return hit;
+  return memo(`series|${variable.id}|${placeId}`, () =>
+    place.kind === "region"
+      ? (fetchJson(staticFile(`series/${variable.id}/${place.id}.json`)) as Promise<Series>)
+      : loadPoint(variable, lat, lon, placeId),
+  );
 }
 
 export const demoCases: DemoCase[] = [];
