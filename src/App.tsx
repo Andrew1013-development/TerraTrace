@@ -26,6 +26,7 @@ export type CaseEvent =
   | { type: 'chooseVariable'; variable: Variable }
   | { type: 'openDemo'; variable: Variable; place: Place }
   | { type: 'pickPlace'; place: Place }
+  | { type: 'chooseHunch'; hunch: Hunch }
   | { type: 'confirm'; hunch: Hunch }
   | { type: 'change' }
   | { type: 'changePlace' }
@@ -70,6 +71,9 @@ export function caseReducer(state: CaseState, event: CaseEvent): CaseState {
       if (state.screen !== 'scene') return state
       if (samePlace(state.place, event.place)) return { ...state, screen: 'brief' }
       return { ...state, screen: 'brief', place: event.place, hunch: undefined, period: null, load: IDLE }
+    case 'chooseHunch':
+      // Saved as soon as it is chosen, so leaving the brief with Next or the rail keeps it.
+      return state.screen === 'brief' ? { ...state, hunch: event.hunch } : state
     case 'confirm':
       if (state.screen !== 'brief') return state
       // The series depends only on the variable and place, so a loaded one is kept.
@@ -209,6 +213,7 @@ function CurrentScreen({ state, dispatch, files: { catalog, regions, leads } }: 
           variable={state.variable}
           placeName={placeName(state.place, regions)}
           hunch={state.hunch}
+          onHunch={(hunch) => dispatch({ type: 'chooseHunch', hunch })}
           onConfirm={(hunch) => dispatch({ type: 'confirm', hunch })}
           onChange={() => dispatch({ type: 'change' })}
         />

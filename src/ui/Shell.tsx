@@ -32,15 +32,18 @@ const HUNCH_TEXT: Record<Hunch, string> = {
 
 const WIDE = '(min-width: 768px)'
 
+const wideQuery = () => (typeof window.matchMedia === 'function' ? window.matchMedia(WIDE) : undefined)
+
 function useWide() {
-  const query = typeof window.matchMedia === 'function' ? window.matchMedia(WIDE) : undefined
-  const [wide, setWide] = useState(query?.matches ?? true)
+  const [wide, setWide] = useState(() => wideQuery()?.matches ?? true)
+  // One listener for the screen's life: matchMedia returns a new object on every call.
   useEffect(() => {
+    const query = wideQuery()
     if (!query) return
     const onChange = (e: MediaQueryListEvent) => setWide(e.matches)
     query.addEventListener('change', onChange)
     return () => query.removeEventListener('change', onChange)
-  }, [query])
+  }, [])
   return wide
 }
 

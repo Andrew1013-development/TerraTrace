@@ -42,6 +42,8 @@ async function makeGlobe(host: HTMLDivElement, onPick: (lat: number, lon: number
   renderer.setSize(host.clientWidth || 600, host.clientHeight || 420)
   renderer.domElement.style.cursor = 'grab'
   host.append(renderer.domElement)
+  // Drawn only when something changed (a move, new content, a resize), so a still globe costs no GPU time.
+  let dirty = true
 
   const scene = new THREE.Scene()
   const camera = new THREE.PerspectiveCamera(32, (host.clientWidth || 600) / (host.clientHeight || 420), 0.1, 100)
@@ -52,16 +54,17 @@ async function makeGlobe(host: HTMLDivElement, onPick: (lat: number, lon: number
   camera.add(sun)
   scene.add(camera)
 
-  // NASA Blue Marble, equirectangular, on the sphere.
+  // NASA Blue Marble, equirectangular, on the sphere: 3840 px wide (1 MB), or 2048 px (260 KB) on a narrow screen.
   const earthMat = new THREE.MeshLambertMaterial({ color: 0x2f6a9a })
   new THREE.TextureLoader().load(
-    `${import.meta.env.BASE_URL}data/earth.jpg`,
+    `${import.meta.env.BASE_URL}data/${host.clientWidth < 640 ? 'earth-2048.jpg' : 'earth.jpg'}`,
     (t) => {
       t.colorSpace = THREE.SRGBColorSpace
       t.anisotropy = renderer.capabilities.getMaxAnisotropy()
       earthMat.map = t
       earthMat.color.set(0xffffff)
       earthMat.needsUpdate = true
+      dirty = true
     },
     undefined,
     () => {}, // without the image the sphere stays ocean blue; the outlines still show
@@ -126,6 +129,7 @@ async function makeGlobe(host: HTMLDivElement, onPick: (lat: number, lon: number
 
   let frame = 0
   const loop = (now: number) => {
+    const animating = aim !== null
     if (aim) {
       const t = Math.min(1, (now - aim.start) / 800)
       const e = t < 0.5 ? 2 * t * t : 1 - (-2 * t + 2) ** 2 / 2
@@ -134,14 +138,17 @@ async function makeGlobe(host: HTMLDivElement, onPick: (lat: number, lon: number
       camera.lookAt(0, 0, 0)
       if (t === 1) aim = null
     }
-    // Up close: slower dragging, and dashes that shrink with the view so outlines stay readable.
-    const k = (camera.position.length() - 1) / (FAR - 1)
-    controls.rotateSpeed = Math.max(0.05, 0.5 * k)
-    dashed.dashSize = Math.max(0.0015, 0.018 * k)
-    dashed.gapSize = Math.max(0.001, 0.012 * k)
-    pin.scale.setScalar(Math.max(0.04, k)) // the same size on screen at any zoom
-    controls.update()
-    renderer.render(scene, camera)
+    const moved = controls.update() // true while dragging, zooming or easing to a stop
+    if (animating || moved || dirty) {
+      // Up close: slower dragging, and dashes that shrink with the view so outlines stay readable.
+      const k = (camera.position.length() - 1) / (FAR - 1)
+      controls.rotateSpeed = Math.max(0.05, 0.5 * k)
+      dashed.dashSize = Math.max(0.0015, 0.018 * k)
+      dashed.gapSize = Math.max(0.001, 0.012 * k)
+      pin.scale.setScalar(Math.max(0.04, k)) // the same size on screen at any zoom
+      renderer.render(scene, camera)
+      dirty = false
+    }
     frame = requestAnimationFrame(loop)
   }
   frame = requestAnimationFrame(loop)
@@ -171,49 +178,62 @@ async function makeGlobe(host: HTMLDivElement, onPick: (lat: number, lon: number
     renderer.setSize(w, h)
     camera.aspect = w / h
     camera.updateProjectionMatrix()
+    dirty = true
   })
   resize.observe(host)
 
+  // What is already built, so typing a point (which only moves the pin) rebuilds no outlines.
+  let built: { regions?: Region[]; shapes?: RegionShapes } = {}
+  let painted = ''
+
   return {
     update({ regions, shapes, highlight, pin: p }) {
-      outlines.children.forEach((c) => (c as InstanceType<typeof THREE.Line>).geometry.dispose())
-      outlines.clear()
-      for (const r of regions) {
-        for (const ring of ringsOf(r, shapes)) {
-          const points = densify(ring).map(([lon, lat]) => new THREE.Vector3(...toVector(lat, lon, 1.004)))
-          const geometry = new THREE.BufferGeometry().setFromPoints(points)
-          const line = new THREE.Line(geometry, dashed)
-          line.computeLineDistances()
-          line.renderOrder = 1 // after the navy line at the same depth, so the dashes sit on top
-          outlines.add(new THREE.Line(geometry.clone(), under), line)
+      dirty = true
+      if (regions !== built.regions || shapes !== built.shapes) {
+        built = { regions, shapes }
+        painted = ''
+        outlines.children.forEach((c) => (c as InstanceType<typeof THREE.Line>).geometry.dispose())
+        outlines.clear()
+        for (const r of regions) {
+          for (const ring of ringsOf(r, shapes)) {
+            const points = densify(ring).map(([lon, lat]) => new THREE.Vector3(...toVector(lat, lon, 1.004)))
+            const geometry = new THREE.BufferGeometry().setFromPoints(points)
+            const line = new THREE.Line(geometry, dashed)
+            line.computeLineDistances()
+            line.renderOrder = 1 // after the navy line at the same depth, so the dashes sit on top
+            outlines.add(new THREE.Line(geometry.clone(), under), line)
+          }
         }
       }
 
-      ctx.clearRect(0, 0, canvas.width, canvas.height)
-      edge.children.forEach((c) => (c as InstanceType<typeof THREE.Line>).geometry.dispose())
-      edge.clear()
       const chosen = regions.find((r) => r.id === highlight)
-      if (chosen) {
-        for (const ring of ringsOf(chosen, shapes)) {
-          const points = densify(ring).map(([lon, lat]) => new THREE.Vector3(...toVector(lat, lon, 1.005)))
-          const line = new THREE.Line(new THREE.BufferGeometry().setFromPoints(points), edgeMat)
-          line.renderOrder = 2
-          edge.add(line)
+      if ((highlight ?? '') !== painted) {
+        painted = highlight ?? ''
+        ctx.clearRect(0, 0, canvas.width, canvas.height)
+        edge.children.forEach((c) => (c as InstanceType<typeof THREE.Line>).geometry.dispose())
+        edge.clear()
+        if (chosen) {
+          for (const ring of ringsOf(chosen, shapes)) {
+            const points = densify(ring).map(([lon, lat]) => new THREE.Vector3(...toVector(lat, lon, 1.005)))
+            const line = new THREE.Line(new THREE.BufferGeometry().setFromPoints(points), edgeMat)
+            line.renderOrder = 2
+            edge.add(line)
+          }
+          ctx.beginPath()
+          for (const ring of ringsOf(chosen, shapes)) {
+            ring.forEach(([lon, lat], i) => {
+              const x = ((lon + 180) / 360) * canvas.width
+              const y = ((90 - lat) / 180) * canvas.height
+              if (i) ctx.lineTo(x, y)
+              else ctx.moveTo(x, y)
+            })
+            ctx.closePath()
+          }
+          ctx.fillStyle = 'rgba(228, 55, 0, 0.45)'
+          ctx.fill('evenodd')
         }
-        ctx.beginPath()
-        for (const ring of ringsOf(chosen, shapes)) {
-          ring.forEach(([lon, lat], i) => {
-            const x = ((lon + 180) / 360) * canvas.width
-            const y = ((90 - lat) / 180) * canvas.height
-            if (i) ctx.lineTo(x, y)
-            else ctx.moveTo(x, y)
-          })
-          ctx.closePath()
-        }
-        ctx.fillStyle = 'rgba(228, 55, 0, 0.45)'
-        ctx.fill('evenodd')
+        overlayTex.needsUpdate = true
       }
-      overlayTex.needsUpdate = true
 
       pin.visible = !!p
       if (p) {

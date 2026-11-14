@@ -8,6 +8,7 @@ type CaseBriefProps = {
   variable: Variable
   placeName: string
   hunch?: Hunch // a hunch already given, when the user comes back to this step
+  onHunch: (hunch: Hunch) => void // a radio was chosen
   onConfirm: (hunch: Hunch) => void
   onChange: () => void
 }
@@ -18,7 +19,7 @@ const HUNCHES: { value: Hunch; label: string; icon: ReactNode }[] = [
   { value: 'none', label: 'no change', icon: <FlatIcon size={32} /> },
 ]
 
-export function CaseBrief({ variable, placeName, hunch: given, onConfirm, onChange }: CaseBriefProps) {
+export function CaseBrief({ variable, placeName, hunch: given, onHunch, onConfirm, onChange }: CaseBriefProps) {
   const [hunch, setHunch] = useState<Hunch | undefined>(given)
 
   return (
@@ -39,7 +40,10 @@ export function CaseBrief({ variable, placeName, hunch: given, onConfirm, onChan
                     name="hunch"
                     value={h.value}
                     checked={hunch === h.value}
-                    onChange={() => setHunch(h.value)}
+                    onChange={() => {
+                      setHunch(h.value)
+                      onHunch(h.value)
+                    }}
                   />
                   <span className="hunch-icon" aria-hidden="true">
                     {h.icon}
