@@ -108,8 +108,8 @@ a {
   outline: 3px solid var(--neon-blue);
   outline-offset: 2px;
 }
-/* Headings get focus only so screen readers announce a new screen; they are not controls. */
-h1[tabindex="-1"]:focus { outline: none; }
+/* Headings and clue prompts get focus only so screen readers announce what changed; they are not controls. */
+[tabindex="-1"]:focus { outline: none; }
 
 /* Hover and current-step underline: a 2px line that slides in from the left. */
 .underline {

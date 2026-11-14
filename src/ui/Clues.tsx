@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { liveOptions, narrow, nextQuestion, questions } from '../clues'
 import type { DemoCase, Variable } from '../types'
 import { PrimaryButton } from './PrimaryButton'
@@ -14,19 +14,31 @@ type CluesProps = {
 export function Clues({ catalog, demoCases, onVariable, onDemo }: CluesProps) {
   const [suspects, setSuspects] = useState(catalog)
   const [asked, setAsked] = useState<string[]>([])
+  const [moves, setMoves] = useState(0) // answers and restarts so far
   const question = nextQuestion(suspects, asked, questions)
   const left = suspects.length
+
+  // After each answer or restart, focus what comes next, so keyboard and screen reader users keep their place.
+  const next = useRef<HTMLElement | null>(null)
+  const setNext = (el: HTMLElement | null) => {
+    next.current = el
+  }
+  useEffect(() => {
+    if (moves > 0) next.current?.focus()
+  }, [moves])
 
   return (
     <section className="clues">
       <ScreenHeading>Gather the clues</ScreenHeading>
 
-      {/* Keyed by the answers given, so each answer remounts the cards and replays the rise-in animation. */}
-      <div key={asked.length} className="clues-grid">
+      {/* Keyed by moves, so each answer or restart remounts the cards and replays the rise-in animation. */}
+      <div key={moves} className="clues-grid">
         <div className="card clues-main">
           {question ? (
             <fieldset className="question">
-              <legend>{question.text}</legend>
+              <legend ref={setNext} tabIndex={-1}>
+                {question.text}
+              </legend>
               <div className="options">
                 {liveOptions(question, suspects).map((o) => (
                   <button
@@ -35,6 +47,7 @@ export function Clues({ catalog, demoCases, onVariable, onDemo }: CluesProps) {
                     onClick={() => {
                       setSuspects(narrow(suspects, o))
                       setAsked([...asked, question.id])
+                      setMoves(moves + 1)
                     }}
                   >
                     {o.label}
@@ -45,13 +58,17 @@ export function Clues({ catalog, demoCases, onVariable, onDemo }: CluesProps) {
           ) : left === 1 ? (
             <div className="solved">
               <p className="eyebrow">Your variable</p>
-              <p className="solved-name">{suspects[0].name}</p>
+              <p ref={setNext} tabIndex={-1} className="solved-name">
+                {suspects[0].name}
+              </p>
               <p>{suspects[0].definition}</p>
               <PrimaryButton onClick={() => onVariable(suspects[0])}>Continue</PrimaryButton>
             </div>
           ) : (
             <div className="pick">
-              <p className="question-text">Which one fits your question best?</p>
+              <p ref={setNext} tabIndex={-1} className="question-text">
+                Which one fits your question best?
+              </p>
               <div className="options">
                 {suspects.map((v) => (
                   <button key={v.id} type="button" onClick={() => onVariable(v)}>
@@ -68,6 +85,7 @@ export function Clues({ catalog, demoCases, onVariable, onDemo }: CluesProps) {
               onClick={() => {
                 setSuspects(catalog)
                 setAsked([])
+                setMoves(moves + 1)
               }}
             >
               Start over
