@@ -15,3 +15,4 @@ One line per meaningful use of AI tools. No AI model runs in the app.
 | Task B2 | Dev B | Claude Code | Wrote scripts/make_stats_fixtures.py, the statistics stub, tests and implementation in src/stats/ from ARCHITECTURE.md section 7.1 | Dev B, then Dev C line by line |
 | Task B4 | Dev B | Claude Code | Wrote the place helpers stub, tests and implementation in src/place/ from ARCHITECTURE.md sections 4.4 and 8 | Dev B |
 | Task B7 | Dev B | Claude Code | Drafted the methods section in README.md from ARCHITECTURE.md section 7 and the real test results, and corrected the "Before the event" line to match DESIGN.md section 8 | Dev B to confirm |
+| Task A7 | Dev A | Claude Code | Wrote the demo case tests and filled `demoCases` with the two cases chosen in Task B6 | Dev A |
