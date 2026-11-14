@@ -279,6 +279,95 @@ button {
   .solved-case-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
+/* Scene: region list and leads side by side on wide screens, coordinate form below. */
+.scene-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-4);
+  margin-bottom: var(--space-4);
+}
+.regions {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: var(--space-2);
+}
+.regions legend,
+.coords h2,
+.leads h2 {
+  font-family: var(--font-head);
+  font-weight: 700;
+  font-size: var(--text-lg);
+  padding: 0;
+  margin: 0 0 var(--space-3);
+}
+.region-option {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 44px;
+  padding: 0 var(--space-3);
+  border: 2px solid var(--line);
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: border-color var(--fast) var(--ease), background-color var(--fast) var(--ease);
+}
+.region-option:hover { border-color: var(--electric-blue); }
+.region-option:has(input:checked) {
+  border-color: var(--neon-blue);
+  background: var(--tile);
+}
+.region-option input {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  accent-color: var(--neon-blue);
+}
+.leads ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+.leads p { margin: 0 0 var(--space-1); }
+.leads a {
+  font-size: var(--text-sm);
+  overflow-wrap: anywhere;
+}
+.coord-fields {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin-bottom: var(--space-3);
+}
+.coord-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  font-size: var(--text-sm);
+  color: var(--muted);
+}
+.coord-field input {
+  font: inherit;
+  font-size: var(--text-md);
+  color: var(--ink);
+  width: 10rem;
+  max-width: 100%;
+  min-height: 44px;
+  padding: 0 var(--space-3);
+  border: 2px solid var(--line);
+  border-radius: var(--radius);
+}
+.coord-field input[aria-invalid="true"] { border-color: var(--red); }
+
+@media (min-width: 900px) {
+  .scene-grid { grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); }
+}
+
 /* Case brief: one centered card. */
 .brief {
   max-width: 560px;

@@ -23,6 +23,7 @@ vi.mock('./data', async () => {
     getSeries: vi.fn(() => Promise.resolve(f.sampleSeries)),
     loadCatalog: vi.fn(() => Promise.resolve(f.sampleCatalog)),
     loadRegions: vi.fn(() => Promise.resolve(f.sampleRegions)),
+    loadLeads: vi.fn(() => Promise.resolve(f.sampleLeads)),
     demoCases: [{ id: 'demo', title: 'Synthetic demo', variableId: 'T2M', place: { kind: 'region', id: 'sahel' } }],
   }
 })
@@ -74,6 +75,7 @@ test('walks clues, scene, brief, evidence, verdict and back to clues', async () 
   await user.click(await screen.findByRole('button', { name: 'air temperature' }))
 
   await expectScreen('Pick the scene')
+  await user.click(screen.getByRole('radio', { name: 'Sahel' }))
   await user.click(screen.getByRole('button', { name: 'Use this region' }))
 
   await expectScreen('Case brief')
@@ -93,6 +95,7 @@ test('Change on the brief goes back to the clues', async () => {
   const user = userEvent.setup()
   render(<App />)
   await user.click(await screen.findByRole('button', { name: 'air temperature' }))
+  await user.click(screen.getByRole('radio', { name: 'Sahel' }))
   await user.click(screen.getByRole('button', { name: 'Use this region' }))
   await user.click(screen.getByRole('button', { name: 'Change' }))
   await expectScreen('Gather the clues')

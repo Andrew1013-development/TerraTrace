@@ -21,3 +21,4 @@ One line per meaningful use of AI tools. No AI model runs in the app.
 | Task B3 | Dev B | Claude Code | Wrote the verdict stub, tests and implementation in src/verdict/ from ARCHITECTURE.md section 7.2; wording copied exactly | Dev B, then Dev C line by line |
 | Tasks C2 and C3 | Dev C | Claude Code | Wrote the Evidence screen, chart and their tests, the case brief and its tests, and switched the app from fixtures to the real data, stats and place modules | Dev C |
 | Task C4 | Dev C | Claude Code | Wrote the clues screen and its tests on top of the A4 engine, and the clues layout | Dev C |
+| Task C5 | Dev C | Claude Code | Wrote the place picker, coordinate form and leads display with their tests, and the scene layout | Dev C |

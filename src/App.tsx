@@ -1,7 +1,7 @@
 import { useEffect, useReducer, useState } from 'react'
-import { demoCases, getSeries, loadCatalog, loadRegions, type DataError } from './data'
+import { demoCases, getSeries, loadCatalog, loadLeads, loadRegions, type DataError } from './data'
 import { placeName } from './place'
-import type { Hunch, Place, Region, Series, Variable } from './types'
+import type { Hunch, Lead, Place, Region, Series, Variable } from './types'
 import { CaseBrief } from './ui/CaseBrief'
 import { Clues } from './ui/Clues'
 import { Evidence } from './ui/Evidence'
@@ -71,7 +71,7 @@ export function caseReducer(state: CaseState, event: CaseEvent): CaseState {
   }
 }
 
-type CaseFiles = { catalog: Variable[]; regions: Region[] }
+type CaseFiles = { catalog: Variable[]; regions: Region[]; leads: Lead[] }
 
 export default function App() {
   const [state, dispatch] = useReducer(caseReducer, initialState)
@@ -82,8 +82,8 @@ export default function App() {
 
   useEffect(() => {
     let live = true
-    Promise.all([loadCatalog(), loadRegions()]).then(
-      ([catalog, regions]) => live && setFiles({ catalog, regions }),
+    Promise.all([loadCatalog(), loadRegions(), loadLeads()]).then(
+      ([catalog, regions, leads]) => live && setFiles({ catalog, regions, leads }),
       (error: DataError) => live && setFiles(error),
     )
     return () => {
@@ -132,7 +132,7 @@ export default function App() {
 
 type ScreenProps = { state: CaseState; dispatch: (e: CaseEvent) => void; files: CaseFiles }
 
-function CurrentScreen({ state, dispatch, files: { catalog, regions } }: ScreenProps) {
+function CurrentScreen({ state, dispatch, files: { catalog, regions, leads } }: ScreenProps) {
   switch (state.screen) {
     case 'clues':
       return (
@@ -147,7 +147,16 @@ function CurrentScreen({ state, dispatch, files: { catalog, regions } }: ScreenP
         />
       )
     case 'scene':
-      return <PlacePicker regions={regions} onPick={(place) => dispatch({ type: 'pickPlace', place })} />
+      // The reducer only reaches the scene with a variable set.
+      if (!state.variable) return null
+      return (
+        <PlacePicker
+          variable={state.variable}
+          regions={regions}
+          leads={leads}
+          onPick={(place) => dispatch({ type: 'pickPlace', place })}
+        />
+      )
     case 'brief':
       // The reducer only reaches the brief with a variable and a place set.
       if (!state.variable || !state.place) return null
