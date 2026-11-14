@@ -6,11 +6,20 @@ import { beforeEach, describe, expect, test, vi } from "vitest";
 import { liveOptions, narrow, nextQuestion, questions } from "../clues";
 import { leadsFor, parsePoint, placeName } from "../place";
 import { analyze, countValid, deseasonalize } from "../stats";
-import type { Hunch, Lead, Region, Variable, Verdict } from "../types";
+import type { Hunch, Lead, Region, Series, Variable, Verdict } from "../types";
 import { getVerdict, hunchLine, oppositeDirections } from "../verdict";
 import { type Power, stubFetch } from "./testFetch";
 
 let data: typeof import("./index");
+
+// Each regional series is analysed once per toggle state and shared by stages 4 to 6b (D13).
+// Keyed by ids: every stage loads the same static file for the same variable and region.
+const analyzed = new Map<string, ReturnType<typeof analyze>>();
+function analyzeOnce(s: Series, toggle: boolean): ReturnType<typeof analyze> {
+  const key = `${s.variableId}|${s.placeId}|${toggle}`;
+  if (!analyzed.has(key)) analyzed.set(key, analyze(s, toggle));
+  return analyzed.get(key) as ReturnType<typeof analyze>;
+}
 let fetchMock: ReturnType<typeof stubFetch>;
 
 // A fresh data module per test, so its in-memory cache starts empty.
@@ -116,7 +125,7 @@ describe("4. Evidence: every catalog variable in every region", () => {
         expect(anomalies.map((x) => x === null), at).toEqual(s.values.map((x) => x === null));
 
         for (const toggle of [true, false]) {
-          const t = analyze(s, toggle);
+          const t = analyzeOnce(s, toggle);
           expect(t, `${at} toggle ${toggle}`).not.toBeNull();
           expect(t!.n).toBe(n);
           expect(t!.deseasonalized).toBe(toggle);
@@ -163,7 +172,7 @@ describe("5. Verdict: every catalog variable in every region, both toggle states
         const s = await data.getSeries(v, { kind: "region", id: r.id });
         for (const toggle of [true, false]) {
           const at = `${v.id}/${r.id} toggle ${toggle}`;
-          const t = analyze(s, toggle)!;
+          const t = analyzeOnce(s, toggle)!;
           const verdict = getVerdict(t, v, place);
           expect(["rise", "fall", "mixed", "none"], at).toContain(verdict.kind);
           const m = verdict.text.match(template(verdict.kind, v, place));
@@ -216,7 +225,7 @@ describe("6. Golden demo cases: the numbers Dev B cross-checked in Python (issue
       const s = await data.getSeries(v, c.place);
       for (const toggle of [false, true] as const) {
         const want = golden[c.id as keyof typeof golden][`${toggle}`];
-        const t = analyze(s, toggle)!;
+        const t = analyzeOnce(s, toggle)!;
         const at = `${c.id} toggle ${toggle}`;
         expect(sig2(t.slopePerDecade), at).toBe(want.rate);
         expect(t.ci95.map(sig2), at).toEqual(want.ci);
@@ -237,7 +246,7 @@ describe("6b. Demo sentences: what the video quotes (issue 17)", () => {
     const c = data.demoCases.find((x) => x.id === "tibet-temperature")!;
     const v = catalog.find((x) => x.id === c.variableId)!;
     const s = await data.getSeries(v, c.place);
-    const say = (toggle: boolean) => getVerdict(analyze(s, toggle)!, v, placeName(c.place, regions)).text;
+    const say = (toggle: boolean) => getVerdict(analyzeOnce(s, toggle)!, v, placeName(c.place, regions)).text;
     expect(say(true)).toBe("Air temperature in the Tibetan Plateau has risen by about 0.23 °C per decade, and the evidence is strong.");
     expect(say(false)).toBe("We found no significant long-term trend in air temperature in the Tibetan Plateau. That is a real result: it has stayed within its normal ups and downs.");
   });

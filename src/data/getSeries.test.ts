@@ -105,7 +105,7 @@ test("a region place fetches data/series/{variableId}/{regionId}.json under BASE
   const file = { variableId: "T2M", placeId: "sahel", unit: "°C", source: "File source", dates: ["1981-01"], values: [24.1] };
   fetchMock.mockResolvedValue(json(file));
   const s = await data.getSeries(t2m, { kind: "region", id: "sahel" });
-  expect(fetchMock).toHaveBeenCalledWith(`${import.meta.env.BASE_URL}data/series/T2M/sahel.json`);
+  expect(fetchMock).toHaveBeenCalledWith(`${import.meta.env.BASE_URL}data/series/T2M/sahel.json`, expect.anything());
   expect(s).toEqual(file);
 
   fetchMock.mockResolvedValue(json({}, 404));
@@ -124,4 +124,38 @@ test("placeId is the region id, or point:{lat},{lon} with 2 decimals", async () 
 
   fetchMock.mockResolvedValue(json({ variableId: "T2M", placeId: "sahel", unit: "°C", source: "s", dates: [], values: [] }));
   expect((await data.getSeries(t2m, { kind: "region", id: "sahel" })).placeId).toBe("sahel");
+});
+
+test("every request carries an abort signal, and an aborted request is a network error (D2)", async () => {
+  fetchMock.mockRejectedValue(new DOMException("The operation timed out.", "TimeoutError"));
+  await expect(data.getSeries(t2m, point)).rejects.toMatchObject({ kind: "network" });
+  expect(fetchMock.mock.calls[0][1]?.signal).toBeInstanceOf(AbortSignal);
+});
+
+test("a region file that is not a series is unavailable, not passed on (D7)", async () => {
+  fetchMock.mockResolvedValueOnce(json({}));
+  await expect(data.getSeries(t2m, { kind: "region", id: "sahel" })).rejects.toMatchObject({ kind: "unavailable" });
+  fetchMock.mockResolvedValueOnce(json({ dates: ["2000-01", "2000-02"], values: [1] }));
+  await expect(data.getSeries(t2m, { kind: "region", id: "sahel" })).rejects.toMatchObject({ kind: "unavailable" });
+});
+
+test("a coordinate just below zero rounds to 0.00, not -0.00 (D8)", async () => {
+  const a = await data.getSeries(t2m, { kind: "point", lat: -0.001, lon: -0.004 });
+  const b = await data.getSeries(t2m, { kind: "point", lat: 0, lon: 0 });
+  expect(a.placeId).toBe("point:0.00,0.00");
+  expect(a).toBe(b);
+  expect(String(fetchMock.mock.calls[0][0])).toContain("longitude=0.00&latitude=0.00");
+  expect(fetchMock).toHaveBeenCalledTimes(1);
+});
+
+test("requests still work on browsers without AbortSignal.timeout (Safari before 16)", async () => {
+  const original = AbortSignal.timeout;
+  // @ts-expect-error: simulating an older browser
+  AbortSignal.timeout = undefined;
+  try {
+    await expect(data.getSeries(t2m, point)).resolves.toMatchObject({ variableId: "T2M" });
+    expect(fetchMock.mock.calls[0][1]?.signal).toBeUndefined();
+  } finally {
+    AbortSignal.timeout = original;
+  }
 });

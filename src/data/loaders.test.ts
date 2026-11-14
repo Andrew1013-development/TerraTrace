@@ -23,7 +23,7 @@ const loaders = [
 test.each(loaders)("%s fetches data/%s under BASE_URL and returns the parsed array", async (name, file, body) => {
   fetchMock.mockResolvedValue(json(body));
   await expect(data[name]()).resolves.toEqual(body);
-  expect(fetchMock).toHaveBeenCalledWith(`${import.meta.env.BASE_URL}data/${file}`);
+  expect(fetchMock).toHaveBeenCalledWith(`${import.meta.env.BASE_URL}data/${file}`, expect.anything());
 });
 
 test.each(loaders)("%s: a failed fetch throws DataError kind network", async (name) => {
