@@ -1,4 +1,6 @@
 // Placeholder from Task A1. Dev C replaces this in Task C1.
+import './styles/app.css'
+
 export default function App() {
   return (
     <main>
