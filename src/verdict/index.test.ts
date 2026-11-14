@@ -108,3 +108,18 @@ describe("hunch and comparison", () => {
     expect(oppositeDirections(v("none"), v("fall"))).toBe(false);
   });
 });
+
+test("extreme rates never throw, use exponent form, or print Infinity (D9)", () => {
+  const say = (slope: number) => text(r(0.2, [0.1, 0.3], slope)); // mixed: the rate is in the sentence
+  expect(() => say(1e-100)).not.toThrow();
+  expect(say(1e-100)).toContain("by about 0 °C");
+  expect(say(-1.5e-20)).toContain("by about 0 °C");
+  expect(say(0.00000012)).toContain("by about 0.00000012 °C"); // unchanged above the floor
+  expect(say(1e21)).toContain("by about 1000000000000000000000 °C");
+  expect(say(1.5e21)).toContain("by about 1500000000000000000000 °C");
+  const huge = say(Number.MAX_VALUE);
+  expect(huge).toMatch(/by about 18\d+ °C/);
+  for (const s of [1e-100, 1.5e-20, 1e21, 1.5e21, Number.MAX_VALUE]) {
+    expect(say(s)).not.toMatch(/\de[+-]?\d|Infinity|NaN/);
+  }
+});
