@@ -2,14 +2,28 @@ import type { Question, Variable } from "../types";
 
 export { questions } from "./questions";
 
-export function narrow(_suspects: Variable[], _option: { tags: string[] }): Variable[] {
-  throw new Error("not implemented");
+export function narrow(suspects: Variable[], option: { tags: string[] }): Variable[] {
+  return suspects.filter((v) => v.tags.some((t) => option.tags.includes(t)));
 }
 
-export function liveOptions(_question: Question, _suspects: Variable[]): Question["options"] {
-  throw new Error("not implemented");
+export function liveOptions(question: Question, suspects: Variable[]): Question["options"] {
+  return question.options.filter((o) => narrow(suspects, o).length > 0);
 }
 
-export function nextQuestion(_suspects: Variable[], _askedIds: string[], _questions: Question[]): Question | null {
-  throw new Error("not implemented");
+// Picks the unasked question whose largest remaining group is smallest; ties go to the earlier one.
+export function nextQuestion(suspects: Variable[], askedIds: string[], questions: Question[]): Question | null {
+  if (suspects.length <= 1) return null;
+  let best: Question | null = null;
+  let bestScore = Infinity;
+  for (const q of questions) {
+    if (askedIds.includes(q.id)) continue;
+    const sizes = liveOptions(q, suspects).map((o) => narrow(suspects, o).length);
+    if (sizes.length < 2 || !sizes.some((n) => n < suspects.length)) continue;
+    const score = Math.max(...sizes);
+    if (score < bestScore) {
+      best = q;
+      bestScore = score;
+    }
+  }
+  return best;
 }
