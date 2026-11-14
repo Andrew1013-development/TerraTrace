@@ -8,7 +8,9 @@ Each dataset is added, with its product name, provider, URL and date accessed, b
 
 | Product | Provider | URL | Accessed |
 |---|---|---|---|
-| NASA POWER Monthly and Annual API v2.10.0, point data, `community=AG`. `T2M` and `PRECTOTCORR` come from MERRA-2 | NASA Langley Research Center, POWER project | https://power.larc.nasa.gov/ | 2026-11-14 |
+| NASA POWER Monthly and Annual API v2.10.0, point data, `community=AG` | NASA Langley Research Center, POWER project | https://power.larc.nasa.gov/ | 2026-11-14 |
+| MERRA-2 reanalysis, through POWER: `T2M`, `T2M_MAX`, `T2M_MIN`, `TS`, `PRECTOTCORR`, `PRECSNO`, `RH2M`, `WS2M`, from 1981 | NASA Global Modeling and Assimilation Office | https://gmao.gsfc.nasa.gov/gmao-products/merra-2/ | 2026-11-14 |
+| CERES SYN1deg, through POWER: `ALLSKY_SFC_SW_DWN`, `CLOUD_AMT`, from 2001. POWER joins an earlier product (SRB) before 2001; the app starts in 2001 so each series uses one product | NASA Langley Research Center, CERES project | https://ceres.larc.nasa.gov/data/ | 2026-11-14 |
 
 ## Libraries
 
