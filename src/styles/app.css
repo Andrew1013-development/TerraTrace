@@ -66,6 +66,8 @@
   --ease: cubic-bezier(.4, 0, .2, 1);
   --fast: 140ms;
   --snap: 160ms;
+  --rise: 480ms;
+  --ease-smooth: cubic-bezier(.45, 0, .25, 1);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -552,6 +554,29 @@ button {
   pointer-events: none;
 }
 .rail :focus-visible { outline-color: var(--yellow); }
+.rail-inner {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+/* Rise-in: each part of a screen winds down a touch, then eases up into place, one after another.
+   Plays when a screen appears and after each clue answer; off under prefers-reduced-motion. */
+@keyframes rise-in {
+  0% { opacity: 0; transform: translateY(20px); }
+  70% { opacity: 1; transform: translateY(-3px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+.screen > *,
+.screen > section > *,
+.clues-grid > * {
+  animation: rise-in var(--rise) var(--ease-smooth) backwards;
+}
+.screen > section > :nth-child(2),
+.clues-grid > :nth-child(2) { animation-delay: 70ms; }
+.screen > section > :nth-child(3) { animation-delay: 140ms; }
+.screen > section > :nth-child(4) { animation-delay: 210ms; }
+.screen > section > :nth-child(n + 5) { animation-delay: 280ms; }
 
 .rail-brand {
   display: flex;
@@ -646,11 +671,21 @@ button {
   .rail {
     grid-area: rail;
     padding: var(--space-5) var(--space-4);
+  }
+  /* Steps stay at the top and "Built for" at the bottom of the window while a long screen scrolls. */
+  .rail-inner {
+    position: sticky;
+    top: var(--space-5);
+    display: flex;
+    flex-direction: column;
     gap: var(--space-5);
   }
   .panel { grid-area: panel; padding: var(--space-6); }
   .built-for {
     grid-area: foot;
+    position: sticky;
+    bottom: 0;
+    z-index: 1;
     border-top: 1px solid rgba(201, 210, 245, 0.3);
   }
   .rail-strip-step,

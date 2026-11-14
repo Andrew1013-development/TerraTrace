@@ -56,36 +56,41 @@ export function Shell({ screen, variable, placeName, hunch, children }: ShellPro
   return (
     <div className="shell">
       <aside className="rail" aria-label="Case progress">
-        <div className="rail-brand">
-          <img src={smallLogo} alt="" width={28} height={28} />
-          <span className="rail-name">Case File</span>
-          <span className="rail-strip-step">
-            Step {currentIndex + 1} of 5: {STEPS[currentIndex].label}
-          </span>
+        <div className="rail-inner">
+          <div className="rail-brand">
+            <img src={smallLogo} alt="" width={28} height={28} />
+            <span className="rail-name">Case File</span>
+            <span className="rail-strip-step">
+              Step {currentIndex + 1} of 5: {STEPS[currentIndex].label}
+            </span>
+          </div>
+          <details className="rail-details" open={open} onToggle={(e) => setOpen(e.currentTarget.open)}>
+            <summary>Case so far</summary>
+            <ol className="rail-steps">
+              {STEPS.map((step, i) => {
+                const current = i === currentIndex
+                const reached = i < currentIndex || values[step.screen] !== undefined
+                const value = current ? 'You are here' : reached ? values[step.screen] : 'Not yet'
+                const state = current ? 'current' : reached ? 'done' : 'todo'
+                return (
+                  <li key={step.screen} className={`rail-step is-${state}`} aria-current={current ? 'step' : undefined}>
+                    <span className="rail-step-label">
+                      {i + 1} {step.label}
+                    </span>
+                    {value && <span className="rail-step-value underline underline-yellow">{value}</span>}
+                  </li>
+                )
+              })}
+            </ol>
+          </details>
         </div>
-        <details className="rail-details" open={open} onToggle={(e) => setOpen(e.currentTarget.open)}>
-          <summary>Case so far</summary>
-          <ol className="rail-steps">
-            {STEPS.map((step, i) => {
-              const current = i === currentIndex
-              const reached = i < currentIndex || values[step.screen] !== undefined
-              const value = current ? 'You are here' : reached ? values[step.screen] : 'Not yet'
-              const state = current ? 'current' : reached ? 'done' : 'todo'
-              return (
-                <li key={step.screen} className={`rail-step is-${state}`} aria-current={current ? 'step' : undefined}>
-                  <span className="rail-step-label">
-                    {i + 1} {step.label}
-                  </span>
-                  {value && <span className="rail-step-value underline underline-yellow">{value}</span>}
-                </li>
-              )
-            })}
-          </ol>
-        </details>
       </aside>
       <main className="panel">
-        {context && <p className="context">{context}</p>}
-        {children}
+        {/* Keyed by screen so each new screen remounts and plays the rise-in animation. */}
+        <div key={screen} className="screen">
+          {context && <p className="context">{context}</p>}
+          {children}
+        </div>
       </main>
       <footer className="built-for">
         <span>Built for</span>

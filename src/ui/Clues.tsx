@@ -21,7 +21,8 @@ export function Clues({ catalog, demoCases, onVariable, onDemo }: CluesProps) {
     <section className="clues">
       <ScreenHeading>Gather the clues</ScreenHeading>
 
-      <div className="clues-grid">
+      {/* Keyed by the answers given, so each answer remounts the cards and replays the rise-in animation. */}
+      <div key={asked.length} className="clues-grid">
         <div className="card clues-main">
           {question ? (
             <fieldset className="question">
