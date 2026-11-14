@@ -6,7 +6,8 @@ import { beforeEach, describe, expect, test, vi } from "vitest";
 import { liveOptions, narrow, nextQuestion, questions } from "../clues";
 import { leadsFor, parsePoint, placeName } from "../place";
 import { analyze, countValid, deseasonalize } from "../stats";
-import type { Lead, Region, Variable } from "../types";
+import type { Hunch, Lead, Region, Variable, Verdict } from "../types";
+import { getVerdict, hunchLine, oppositeDirections } from "../verdict";
 import { type Power, stubFetch } from "./testFetch";
 
 let data: typeof import("./index");
@@ -128,25 +129,86 @@ describe("4. Evidence: every catalog variable in every region", () => {
   }, 60_000); // 120 pairs × 2 O(n²) analyses take about 9 s locally, longer than Vitest's 5 s default
 });
 
+describe("5. Verdict: every catalog variable in every region, both toggle states", () => {
+  beforeEach(() => start());
+
+  // Architecture section 7.2, word for word. The rate is checked separately, as a number.
+  const CAVEAT = "Monthly values are often related to their neighbours, which can make a trend look more certain than it is.";
+  const HUNCH = {
+    mixed: "Your hunch is neither confirmed nor ruled out.",
+    right: "Your hunch was right.",
+    wrong: "The evidence does not support your hunch.",
+  };
+  const esc = (x: string) => x.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const RATE = String.raw`(\d+(?:\.\d+)?)`;
+  function template(kind: Verdict["kind"], v: Variable, place: string): RegExp {
+    const Name = esc(v.name.charAt(0).toUpperCase() + v.name.slice(1));
+    const where = `${esc(v.name)} in ${esc(place)}`;
+    const rest = `${esc(v.unit)} per decade`;
+    const lead = `^${Name} in ${esc(place)}`;
+    return new RegExp({
+      rise: `${lead} has risen by about ${RATE} ${rest}, and the evidence is strong\\.$`,
+      fall: `${lead} has fallen by about ${RATE} ${rest}, and the evidence is strong\\.$`,
+      mixed: `${lead} may be changing, by about ${RATE} ${rest}, but our two checks disagree\\. Treat this as uncertain\\.$`,
+      none: `^We found no significant long-term trend in ${where}\\. That is a real result: it has stayed within its normal ups and downs\\.$`,
+    }[kind]);
+  }
+
+  test("each verdict has the section 7.2 wording, its rate at 2 significant figures, the caveat and a hunch line", async () => {
+    const [catalog, regions] = await loadAll();
+    for (const v of catalog) {
+      for (const r of regions) {
+        const place = placeName({ kind: "region", id: r.id }, regions);
+        const s = await data.getSeries(v, { kind: "region", id: r.id });
+        for (const toggle of [true, false]) {
+          const at = `${v.id}/${r.id} toggle ${toggle}`;
+          const t = analyze(s, toggle)!;
+          const verdict = getVerdict(t, v, place);
+          expect(["rise", "fall", "mixed", "none"], at).toContain(verdict.kind);
+          const m = verdict.text.match(template(verdict.kind, v, place));
+          expect(m, `${at}: "${verdict.text}"`).not.toBeNull();
+          if (verdict.kind !== "none") {
+            expect(Number(m![1]), at).toBe(Number(Math.abs(t.slopePerDecade).toPrecision(2)));
+          }
+          expect(verdict.text, at).not.toMatch(/\de[+-]?\d/);
+          expect(verdict.caveat, at).toBe(CAVEAT);
+          for (const hunch of ["rise", "fall", "none"] as Hunch[]) {
+            const want = verdict.kind === "mixed" ? HUNCH.mixed : hunch === verdict.kind ? HUNCH.right : HUNCH.wrong;
+            expect(hunchLine(hunch, verdict), `${at} hunch ${hunch}`).toBe(want);
+          }
+        }
+      }
+    }
+  }, 60_000); // reruns analyze on every pair, like stage 4
+
+  test("oppositeDirections is true only for rise beside fall, in either order", () => {
+    const v = (kind: Verdict["kind"]): Verdict => ({ kind, text: "", caveat: "" });
+    const kinds = ["rise", "fall", "mixed", "none"] as const;
+    for (const a of kinds) for (const b of kinds) {
+      expect(oppositeDirections(v(a), v(b)), `${a} beside ${b}`).toBe((a === "rise" && b === "fall") || (a === "fall" && b === "rise"));
+    }
+  });
+});
+
 describe("6. Golden demo cases: the numbers Dev B cross-checked in Python (issue 17)", () => {
   beforeEach(() => start());
 
   // Rates and interval ends as issue 17 reports them, at 2 significant figures;
-  // p at 3 decimals, or "below 0.001" as null.
+  // p at 3 decimals, or "below 0.001" as null; and the verdict kind.
   const golden = {
     "arctic-precipitation": {
-      false: { rate: -0.033, ci: [-0.044, 0.027], p: 0.033 },
-      true: { rate: -0.026, ci: [-0.03, 0.006], p: null },
+      false: { rate: -0.033, ci: [-0.044, 0.027], p: 0.033, kind: "mixed" },
+      true: { rate: -0.026, ci: [-0.03, 0.006], p: null, kind: "mixed" },
     },
     "tibet-temperature": {
-      false: { rate: 0.27, ci: [-0.27, 0.78], p: 0.175 },
-      true: { rate: 0.23, ci: [0.17, 0.28], p: null },
+      false: { rate: 0.27, ci: [-0.27, 0.78], p: 0.175, kind: "none" },
+      true: { rate: 0.23, ci: [0.17, 0.28], p: null, kind: "rise" },
     },
   } as const;
   const sig2 = (x: number) => Number(x.toPrecision(2));
 
-  test("each demo case gives the rate, interval and p-value the demo team was given", async () => {
-    const [catalog] = await loadAll();
+  test("each demo case gives the rate, interval, p-value and verdict the demo team was given", async () => {
+    const [catalog, regions] = await loadAll();
     expect(data.demoCases.map((c) => c.id).sort()).toEqual(Object.keys(golden).sort());
     for (const c of data.demoCases) {
       const v = catalog.find((x) => x.id === c.variableId)!;
@@ -159,6 +221,7 @@ describe("6. Golden demo cases: the numbers Dev B cross-checked in Python (issue
         expect(t.ci95.map(sig2), at).toEqual(want.ci);
         if (want.p === null) expect(t.mkP, at).toBeLessThan(0.001);
         else expect(Number(t.mkP.toFixed(3)), at).toBe(want.p);
+        expect(getVerdict(t, v, placeName(c.place, regions)).kind, at).toBe(want.kind);
       }
     }
   });
