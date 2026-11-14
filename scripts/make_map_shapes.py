@@ -97,7 +97,8 @@ def round_geometry(g, places):
 
 def main(regions_path, countries_path):
     named = {f["properties"]["NAME"]: f["geometry"] for f in json.loads(Path(regions_path).read_text(encoding="utf-8"))["features"]}
-    land = [f["geometry"] for f in json.loads((DATA / "land.json").read_text(encoding="utf-8"))["features"]]
+    # land.json sits beside this script: only the script reads it, so it is not published with the site.
+    land = [f["geometry"] for f in json.loads((ROOT / "scripts" / "land.json").read_text(encoding="utf-8"))["features"]]
     shapes = {}
     for region in json.loads((DATA / "regions.json").read_text(encoding="utf-8")):
         source = [named[NAMED[region["id"]]]] if region["id"] in NAMED else land
