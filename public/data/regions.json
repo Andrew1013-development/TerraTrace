@@ -1,5 +1,14 @@
 [
-  { "id": "sahel", "name": "Sahel", "bbox": [12, -17, 16, 35] },
   { "id": "arctic-canada", "name": "Arctic Canada", "bbox": [68, -120, 78, -70] },
-  { "id": "mekong-delta", "name": "Mekong Delta", "bbox": [9, 104, 11, 107] }
+  { "id": "sahel", "name": "Sahel", "bbox": [12, -17, 16, 35] },
+  { "id": "mekong-delta", "name": "Mekong Delta", "bbox": [9, 104, 11, 107] },
+  { "id": "central-amazon", "name": "Central Amazon", "bbox": [-8, -68, -2, -56] },
+  { "id": "sahara", "name": "Sahara", "bbox": [20, -10, 30, 25] },
+  { "id": "central-siberia", "name": "Central Siberia", "bbox": [55, 90, 70, 120] },
+  { "id": "tibetan-plateau", "name": "Tibetan Plateau", "bbox": [29, 80, 36, 98] },
+  { "id": "iberian-peninsula", "name": "Iberian Peninsula", "bbox": [37, -9, 43, -1] },
+  { "id": "us-great-plains", "name": "US Great Plains", "bbox": [33, -104, 45, -95] },
+  { "id": "murray-darling", "name": "Murray-Darling Basin", "bbox": [-37, 141, -26, 152] },
+  { "id": "antarctic-peninsula", "name": "Antarctic Peninsula", "bbox": [-70, -68, -63, -56] },
+  { "id": "east-african-highlands", "name": "East African Highlands", "bbox": [-4, 33, 4, 40] }
 ]
