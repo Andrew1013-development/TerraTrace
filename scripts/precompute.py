@@ -22,7 +22,8 @@ POWER_URL = "https://power.larc.nasa.gov/api/temporal/monthly/point"
 END_YEAR = 2025
 PAUSE_SECONDS = 1.5
 BACKOFF_SECONDS = [30, 60, 120, 120]  # waits between the 5 tries after HTTP 429
-SOURCE = "NASA POWER monthly, sampled regional mean of 9 points"
+# Appended to the catalog source, so each file names its product and version (issue 22).
+SAMPLED = "sampled regional mean of 9 points"
 MONTH_KEY = re.compile(r"^\d{4}(0[1-9]|1[0-2])$")  # drops the YYYY13 annual key
 
 STATS = {"calls": 0, "rate_limited": 0}
@@ -71,7 +72,7 @@ def region_series(variable, region, fetch):
         "variableId": variable["id"],
         "placeId": region["id"],
         "unit": variable["unit"],
-        "source": SOURCE,
+        "source": f"{variable['source']}, {SAMPLED}",
         "dates": dates,
         "values": values,
     }

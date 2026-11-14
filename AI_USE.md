@@ -25,3 +25,4 @@ One line per meaningful use of AI tools. No AI model runs in the app.
 | Task C6 | Dev C | Claude Code | Wrote the verdict screen and its tests on top of the B3 verdict module, and the verdict card style | Dev C |
 | Pipeline test, verdict stage | Dev A | Claude Code | Added the verdict stage and the demo-case verdict kinds to the pipeline test, and mutation-checked them | Dev A |
 | Task C8 | Dev C | Claude Code | Ran the phone, contrast, keyboard and 200% zoom checks with a scripted audit, and fixed focus after a clue answer (test first) | Dev C |
+| Issue 22 | Dev A | Claude Code | Wrote the failing tests, made region series name their product and version, and reran the precompute script from cache | Dev A |
