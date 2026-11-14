@@ -298,17 +298,51 @@ function Art({ name }: { name: ArtName }) {
     case 'tree-calm':
       return <Tree gust={false} />
     case 'thermo-mid':
-    case 'thermo-high':
-    case 'thermo-low': {
-      const level = name === 'thermo-high' ? 22 : name === 'thermo-low' ? 66 : 44
+      // A usual day: orange mercury settles at half way.
       return (
         <Svg>
           <rect x="48" y="12" width="24" height="76" rx="12" fill="#FFFFFF" stroke="#4A5170" strokeWidth="4" />
-          <rect className="a-rise" x="54" y={level} width="12" height={86 - level} rx="6" fill="#E43700" />
+          <rect className="a-rise" x="54" y="50" width="12" height="36" rx="6" fill="#F57C00" />
+          <circle cx="60" cy="96" r="16" fill="#F57C00" stroke="#4A5170" strokeWidth="4" />
+        </Svg>
+      )
+    case 'thermo-high':
+      // The hottest: red mercury overshoots, the top breaks off in shards and the mercury spills over.
+      return (
+        <Svg>
+          <path d="M48 30V86M72 30V86" stroke="#4A5170" strokeWidth="4" strokeLinecap="round" />
+          <path d="M51 30h18V86H51z" fill="#FFFFFF" />
+          <rect className="a-overflow" x="54" y="10" width="12" height="78" rx="6" fill="#E43700" />
+          <path className="a-cap" d="M48 30v-6a12 12 0 0 1 24 0v6" fill="#FFFFFF" stroke="#4A5170" strokeWidth="4" strokeLinejoin="round" />
+          <path className="a-rim" d="M48 31l4-6 4 5 4-7 4 6 4-5 4 7" fill="none" stroke="#4A5170" strokeWidth="3" strokeLinejoin="round" />
+          <g fill="#C5D3E8" stroke="#4A5170" strokeWidth="1.5">
+            <path className="a-shard a-shard-1" d="M50 22l6-4 1 6z" />
+            <path className="a-shard a-shard-2" d="M58 16l5 1-2 6z" />
+            <path className="a-shard a-shard-3" d="M66 20l6 3-5 3z" />
+          </g>
+          <g fill="#E43700">
+            <path className="a-spill a-spill-1" d="M50 26c-3 4-3 8 0 9 3-1 3-5 0-9z" />
+            <path className="a-spill a-spill-2" d="M70 26c-3 4-3 8 0 9 3-1 3-5 0-9z" />
+            <circle className="a-spill a-spill-3" cx="60" cy="18" r="3" />
+          </g>
           <circle cx="60" cy="96" r="16" fill="#E43700" stroke="#4A5170" strokeWidth="4" />
         </Svg>
       )
-    }
+    case 'thermo-low':
+      // The coldest: blue mercury creeps up while the glass shivers, and frost flashes across it.
+      return (
+        <Svg>
+          <g className="a-shiver">
+            <rect x="48" y="12" width="24" height="76" rx="12" fill="#FFFFFF" stroke="#4A5170" strokeWidth="4" />
+            <rect className="a-creep" x="54" y="62" width="12" height="24" rx="6" fill="#2E96F5" />
+            <circle cx="60" cy="96" r="16" fill="#2E96F5" stroke="#4A5170" strokeWidth="4" />
+            <g className="a-frost" stroke="#BFE3FF" strokeWidth="1.6" strokeLinecap="round" fill="none">
+              <path d="M50 22l6 6 -3 6 6 5M70 30l-5 4 2 7-6 4M52 52l6 3 4-4 6 4M66 64l-6 4 1 6M48 80l7-3 5 4M56 92l-6 6M66 90l7 4 2 6M44 100l6-2" />
+              <path d="M38 40l6 2M80 46l-6 3M36 70l7-1M84 76l-6-2" opacity=".7" />
+            </g>
+          </g>
+        </Svg>
+      )
     default:
       return (
         <Svg>

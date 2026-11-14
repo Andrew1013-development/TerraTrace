@@ -998,3 +998,31 @@ button.rail-step-button:hover { background: rgba(201, 210, 245, 0.12); }
 .witness { display: flex; flex-direction: column; gap: var(--space-4); }
 .compare-card .field select { width: 100%; }
 .compare-hint { margin: var(--space-2) 0 0; font-size: var(--text-sm); color: var(--muted); }
+
+/* Thermometers. Hottest: overshoot, the cap breaks into shards and mercury spills (one 3.4 s loop). */
+.a-overflow { animation: a-overflow 3.4s cubic-bezier(.45, 0, .25, 1) infinite; transform-origin: 50% 100% !important; }
+.a-cap { animation: a-cap 3.4s ease-in infinite; }
+.a-rim { opacity: 0; animation: a-rim 3.4s linear infinite; }
+.a-shard { opacity: 0; animation: a-shard-1 3.4s ease-out infinite; }
+.a-shard-2 { animation-name: a-shard-2; }
+.a-shard-3 { animation-name: a-shard-3; }
+.a-spill { opacity: 0; animation: a-spill-left 3.4s ease-in infinite; }
+.a-spill-2 { animation-name: a-spill-right; }
+.a-spill-3 { animation-name: a-spill-up; }
+@keyframes a-overflow { 0% { transform: scaleY(.45); } 34% { transform: scaleY(1); } 88% { transform: scaleY(1); } 100% { transform: scaleY(.45); } }
+@keyframes a-cap { 0%, 33% { opacity: 1; transform: none; } 38% { opacity: 0; transform: translateY(-8px) rotate(-14deg); } 92% { opacity: 0; transform: none; } 100% { opacity: 1; transform: none; } }
+@keyframes a-rim { 0%, 34% { opacity: 0; } 37%, 90% { opacity: 1; } 100% { opacity: 0; } }
+@keyframes a-shard-1 { 0%, 34% { opacity: 0; transform: none; } 37% { opacity: 1; } 62%, 100% { opacity: 0; transform: translate(-16px, -12px) rotate(-120deg); } }
+@keyframes a-shard-2 { 0%, 34% { opacity: 0; transform: none; } 37% { opacity: 1; } 62%, 100% { opacity: 0; transform: translate(2px, -18px) rotate(160deg); } }
+@keyframes a-shard-3 { 0%, 34% { opacity: 0; transform: none; } 37% { opacity: 1; } 62%, 100% { opacity: 0; transform: translate(16px, -10px) rotate(110deg); } }
+@keyframes a-spill-left { 0%, 36% { opacity: 0; transform: none; } 40% { opacity: 1; transform: translate(-2px, -2px); } 82% { opacity: 1; transform: translate(-6px, 46px); } 90%, 100% { opacity: 0; transform: translate(-6px, 50px); } }
+@keyframes a-spill-right { 0%, 38% { opacity: 0; transform: none; } 42% { opacity: 1; transform: translate(2px, -2px); } 84% { opacity: 1; transform: translate(6px, 46px); } 92%, 100% { opacity: 0; transform: translate(6px, 50px); } }
+@keyframes a-spill-up { 0%, 35% { opacity: 0; transform: none; } 40% { opacity: 1; transform: translateY(-8px); } 58% { opacity: 1; transform: translate(-10px, 2px); } 70%, 100% { opacity: 0; transform: translate(-14px, 20px); } }
+
+/* Coldest: the whole thermometer shivers, the mercury creeps up a little, and frost flashes across it. */
+.a-shiver { animation: a-shiver 140ms steps(2, end) infinite; }
+.a-creep { animation: a-creep 2.6s ease-in-out infinite alternate; transform-origin: 50% 100% !important; }
+.a-frost { opacity: 0; animation: a-frost 2.4s linear infinite; }
+@keyframes a-shiver { 0% { transform: translateX(-1.2px); } 100% { transform: translateX(1.2px); } }
+@keyframes a-creep { from { transform: scaleY(.8); } to { transform: scaleY(1.15); } }
+@keyframes a-frost { 0%, 70% { opacity: 0; } 74% { opacity: .95; } 86%, 100% { opacity: 0; } }
