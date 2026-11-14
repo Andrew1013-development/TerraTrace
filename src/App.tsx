@@ -18,6 +18,7 @@ export type CaseState = {
   place?: Place
   hunch?: Hunch
   deseasonalized: boolean
+  period: { start: number; end: number } | null // the years analysed (issue 46); null = the full record
   load: { status: 'idle' | 'loading' | 'ready' | 'error'; series?: Series; error?: DataError }
 }
 
@@ -31,10 +32,11 @@ export type CaseEvent =
   | { type: 'seeVerdict' }
   | { type: 'restart' }
   | { type: 'toggle' }
+  | { type: 'setPeriod'; period: { start: number; end: number } | null }
   | { type: 'loaded'; variable: Variable; place: Place; series: Series }
   | { type: 'failed'; variable: Variable; place: Place; error: DataError }
 
-export const initialState: CaseState = { screen: 'clues', deseasonalized: true, load: { status: 'idle' } }
+export const initialState: CaseState = { screen: 'clues', deseasonalized: true, period: null, load: { status: 'idle' } }
 
 export const STEPS: Screen[] = ['clues', 'scene', 'brief', 'evidence', 'verdict']
 
@@ -58,15 +60,15 @@ export function caseReducer(state: CaseState, event: CaseEvent): CaseState {
     case 'chooseVariable':
       if (state.screen !== 'clues') return state
       if (state.variable?.id === event.variable.id) return { ...state, screen: 'scene' }
-      return { ...state, screen: 'scene', variable: event.variable, place: undefined, hunch: undefined, load: IDLE }
+      return { ...state, screen: 'scene', variable: event.variable, place: undefined, hunch: undefined, period: null, load: IDLE }
     case 'openDemo':
       return state.screen === 'clues'
-        ? { ...state, screen: 'brief', variable: event.variable, place: event.place, hunch: undefined, load: IDLE }
+        ? { ...state, screen: 'brief', variable: event.variable, place: event.place, hunch: undefined, period: null, load: IDLE }
         : state
     case 'pickPlace':
       if (state.screen !== 'scene') return state
       if (samePlace(state.place, event.place)) return { ...state, screen: 'brief' }
-      return { ...state, screen: 'brief', place: event.place, hunch: undefined, load: IDLE }
+      return { ...state, screen: 'brief', place: event.place, hunch: undefined, period: null, load: IDLE }
     case 'confirm':
       if (state.screen !== 'brief') return state
       // The series depends only on the variable and place, so a loaded one is kept.
@@ -78,7 +80,7 @@ export function caseReducer(state: CaseState, event: CaseEvent): CaseState {
       }
     case 'change':
       return state.screen === 'brief'
-        ? { ...state, screen: 'clues', variable: undefined, place: undefined, hunch: undefined, load: IDLE }
+        ? { ...state, screen: 'clues', variable: undefined, place: undefined, hunch: undefined, period: null, load: IDLE }
         : state
     case 'goTo': {
       const to = STEPS.indexOf(event.screen)
@@ -90,6 +92,9 @@ export function caseReducer(state: CaseState, event: CaseEvent): CaseState {
       return state.screen === 'verdict' ? initialState : state
     case 'toggle':
       return { ...state, deseasonalized: !state.deseasonalized }
+    case 'setPeriod':
+      // Never touches load: the record is cut on the client, so changing the years never refetches.
+      return { ...state, period: event.period }
     case 'loaded':
     case 'failed': {
       // A response for a variable or place that is no longer selected is ignored (section 5).
@@ -207,7 +212,9 @@ function CurrentScreen({ state, dispatch, files: { catalog, regions, leads } }: 
         <Evidence
           load={state.load}
           deseasonalized={state.deseasonalized}
+          period={state.period}
           onToggle={() => dispatch({ type: 'toggle' })}
+          onPeriod={(period) => dispatch({ type: 'setPeriod', period })}
           onNext={() => dispatch({ type: 'seeVerdict' })}
         />
       )
@@ -220,6 +227,7 @@ function CurrentScreen({ state, dispatch, files: { catalog, regions, leads } }: 
           placeName={placeName(state.place, regions)}
           series={state.load.series}
           deseasonalized={state.deseasonalized}
+          period={state.period}
           hunch={state.hunch}
           regions={regions}
           onRestart={() => dispatch({ type: 'restart' })}

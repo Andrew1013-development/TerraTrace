@@ -4,10 +4,11 @@ import App from './App'
 import { loadCatalog } from './data'
 import { sampleCatalog, sampleResult } from './fixtures'
 
-vi.mock('./stats', () => ({
+vi.mock('./stats', async () => ({
   analyze: vi.fn(() => sampleResult),
   countValid: vi.fn(() => 180),
   deseasonalize: vi.fn(() => []),
+  ...(await import('./fixtures/period')), // stand-in until the issue 46 functions land
 }))
 vi.mock('./ui/Chart', () => ({ Chart: () => <figure aria-label="chart" /> }))
 // No question can split, so the clues screen lists the suspects as buttons; Clues.test.tsx covers the questions.

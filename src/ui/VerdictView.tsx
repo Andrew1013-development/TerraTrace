@@ -1,6 +1,6 @@
 import { useMemo, useRef, useState, type ReactNode } from 'react'
 import { getSeries, type DataError } from '../data'
-import { analyze, countValid } from '../stats'
+import { analyze, countValid, slicePeriod, validPeriod } from '../stats'
 import type { Hunch, Region, Series, Variable, Verdict } from '../types'
 import { getVerdict, hunchLine, oppositeDirections } from '../verdict'
 import { ArrowDownIcon, ArrowUpIcon, FlatIcon, QuestionIcon } from './icons'
@@ -12,6 +12,7 @@ type VerdictViewProps = {
   placeName: string
   series: Series
   deseasonalized: boolean
+  period: { start: number; end: number } | null // the years chosen on the Evidence screen; null = the full record
   hunch: Hunch
   regions: Region[]
   onRestart: () => void
@@ -39,20 +40,44 @@ type Witness =
   | { status: 'ready'; region: Region; series: Series }
   | { status: 'error'; region: Region; error: DataError }
 
-// The verdict for one series, or null when it has too few months.
-function useVerdict(series: Series | undefined, deseasonalized: boolean, variable: Variable, place: string) {
+type Years = [number, number] | undefined
+
+// The verdict for one series, or null when it has too few months. With years, the sentence names them.
+function useVerdict(series: Series | undefined, deseasonalized: boolean, variable: Variable, place: string, years: Years) {
+  const [from, to] = years ?? []
   return useMemo(() => {
     const result = series && analyze(series, deseasonalized)
-    return result ? getVerdict(result, variable, place) : null
-  }, [series, deseasonalized, variable, place])
+    return result ? getVerdict(result, variable, place, from === undefined || to === undefined ? undefined : [from, to]) : null
+  }, [series, deseasonalized, variable, place, from, to])
 }
 
-export function VerdictView({ variable, placeName, series, deseasonalized, hunch, regions, onRestart }: VerdictViewProps) {
-  const verdict = useVerdict(series, deseasonalized, variable, placeName)
+const yearOf = (date: string) => Number(date.slice(0, 4))
+
+export function VerdictView({ variable, placeName, series, deseasonalized, period, hunch, regions, onRestart }: VerdictViewProps) {
+  const years: Years = period ? [period.start, period.end] : undefined
+  // Issue 46: with years chosen, the period's verdict comes first and the full record's sits beside it, both naming
+  // their years. The hunch was made against the full record, so the hunch line answers the full-record verdict.
+  const periodSeries = useMemo(() => (period ? slicePeriod(series, period.start, period.end) : undefined), [series, period])
+  const fullYears: Years = period ? [yearOf(series.dates[0]), yearOf(series.dates[series.dates.length - 1])] : undefined
+  const verdict = useVerdict(series, deseasonalized, variable, placeName, fullYears)
+  const periodVerdict = useVerdict(periodSeries, deseasonalized, variable, placeName, years)
   const [witness, setWitness] = useState<Witness>({ status: 'idle' })
   const latest = useRef<string>(undefined)
-  const witnessSeries = witness.status === 'ready' ? witness.series : undefined
-  const witnessVerdict = useVerdict(witnessSeries, deseasonalized, variable, witness.status === 'idle' ? '' : witness.region.name)
+  const witnessFull = witness.status === 'ready' ? witness.series : undefined
+  // The second witness uses the same years, and needs them to be a valid period in its own record.
+  const witnessOk = !!witnessFull && (!period || validPeriod(witnessFull, period.start, period.end))
+  const witnessSeries = useMemo(
+    () => (witnessFull && period ? slicePeriod(witnessFull, period.start, period.end) : witnessFull),
+    [witnessFull, period],
+  )
+  const witnessVerdict = useVerdict(
+    witnessOk ? witnessSeries : undefined,
+    deseasonalized,
+    variable,
+    witness.status === 'idle' ? '' : witness.region.name,
+    years,
+  )
+  const mainVerdict = period ? periodVerdict : verdict
   // Regions only; leave out the region already shown (a point place shows every region).
   const others = regions.filter((r) => r.id !== series.placeId)
 
@@ -72,9 +97,14 @@ export function VerdictView({ variable, placeName, series, deseasonalized, hunch
       <ScreenHeading>The verdict</ScreenHeading>
 
       <div className="verdict-cards">
-        <VerdictCard variable={variable} place={placeName} series={series} verdict={verdict}>
-          {verdict && <p className="hunch-line">{hunchLine(hunch, verdict)}</p>}
-        </VerdictCard>
+        <div className="verdict-main">
+          {period && periodSeries && (
+            <VerdictCard variable={variable} place={placeName} years={years} series={periodSeries} verdict={periodVerdict} />
+          )}
+          <VerdictCard variable={variable} place={placeName} years={fullYears} series={series} verdict={verdict}>
+            {verdict && <p className="hunch-line">{hunchLine(hunch, verdict)}</p>}
+          </VerdictCard>
+        </div>
 
         <div className="witness">
           {others.length > 0 && (
@@ -95,8 +125,14 @@ export function VerdictView({ variable, placeName, series, deseasonalized, hunch
               )}
             </div>
           )}
-          {witness.status === 'ready' && (
-            <VerdictCard variable={variable} place={witness.region.name} series={witness.series} verdict={witnessVerdict} />
+          {witness.status === 'ready' && witnessSeries && (
+            <VerdictCard
+              variable={variable}
+              place={witness.region.name}
+              years={years}
+              series={witnessSeries}
+              verdict={witnessVerdict}
+            />
           )}
           {witness.status === 'loading' && (
             <p role="status" className="card witness-note">
@@ -111,7 +147,7 @@ export function VerdictView({ variable, placeName, series, deseasonalized, hunch
         </div>
       </div>
 
-      {verdict && witnessVerdict && oppositeDirections(verdict, witnessVerdict) && (
+      {mainVerdict && witnessVerdict && oppositeDirections(mainVerdict, witnessVerdict) && (
         <p className="opposite">These two regions are moving in opposite directions.</p>
       )}
 
@@ -125,16 +161,18 @@ export function VerdictView({ variable, placeName, series, deseasonalized, hunch
 type VerdictCardProps = {
   variable: Variable
   place: string
+  years?: [number, number]
   series: Series
   verdict: Verdict | null
   children?: ReactNode
 }
 
-function VerdictCard({ variable, place, series, verdict, children }: VerdictCardProps) {
+function VerdictCard({ variable, place, years, series, verdict, children }: VerdictCardProps) {
   return (
     <article className="card verdict-card">
       <p className="eyebrow">
         {variable.name} · {place}
+        {years && ` · ${years[0]} to ${years[1]}`}
       </p>
       {verdict ? (
         <>

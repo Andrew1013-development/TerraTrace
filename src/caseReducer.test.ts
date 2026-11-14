@@ -34,7 +34,7 @@ test('the toggle flips the seasonal setting without touching the load', () => {
 })
 
 test('starts on clues with the seasonal toggle on and nothing loaded', () => {
-  expect(initialState).toEqual({ screen: 'clues', deseasonalized: true, load: { status: 'idle' } })
+  expect(initialState).toEqual({ screen: 'clues', deseasonalized: true, period: null, load: { status: 'idle' } })
 })
 
 test('the brief confirm stores the hunch and starts loading', () => {
@@ -52,7 +52,7 @@ test('Change clears variable, place and hunch', () => {
 
 test('restart resets everything', () => {
   const s = caseReducer(
-    { screen: 'verdict', variable: v, place: p, hunch: 'none', deseasonalized: false, load: { status: 'loading' } },
+    { screen: 'verdict', variable: v, place: p, hunch: 'none', deseasonalized: false, period: { start: 1990, end: 2010 }, load: { status: 'loading' } },
     { type: 'restart' },
   )
   expect(s).toEqual(initialState)
@@ -71,6 +71,7 @@ const done = {
   place: p,
   hunch: 'rise' as const,
   deseasonalized: true,
+  period: null,
   load: { status: 'ready' as const, series: sampleSeries },
 }
 
@@ -116,4 +117,20 @@ test('a new hunch on a revisited brief keeps the loaded series', () => {
   const back = caseReducer(done, { type: 'goTo', screen: 'brief' })
   const s = caseReducer(back, { type: 'confirm', hunch: 'fall' })
   expect(s).toMatchObject({ screen: 'evidence', hunch: 'fall', load: { status: 'ready', series: sampleSeries } })
+})
+
+test('setPeriod sets the years and keeps the loaded series (no refetch)', () => {
+  const s = caseReducer({ ...done, screen: 'evidence' }, { type: 'setPeriod', period: { start: 1995, end: 2025 } })
+  expect(s.period).toEqual({ start: 1995, end: 2025 })
+  expect(s.load).toBe(done.load)
+  expect(caseReducer(s, { type: 'setPeriod', period: null }).period).toBeNull()
+})
+
+test('the period resets when the variable or place changes, and on Change', () => {
+  const narrowed = { ...done, period: { start: 1995, end: 2025 } }
+  const variable = caseReducer({ ...narrowed, screen: 'clues' }, { type: 'chooseVariable', variable: sampleCatalog[1] })
+  const place = caseReducer({ ...narrowed, screen: 'scene' }, { type: 'pickPlace', place: { kind: 'region', id: 'other' } })
+  const change = caseReducer({ ...narrowed, screen: 'brief' }, { type: 'change' })
+  const demo = caseReducer({ ...narrowed, screen: 'clues' }, { type: 'openDemo', variable: v, place: p })
+  expect([variable, place, change, demo].map((s) => s.period)).toEqual([null, null, null, null])
 })

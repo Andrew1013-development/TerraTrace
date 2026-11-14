@@ -196,6 +196,7 @@ type CaseState = {
   screen: Screen;
   variable?: Variable; place?: Place; hunch?: Hunch;
   deseasonalized: boolean;            // starts true
+  period: { start: number; end: number } | null; // the whole years analysed; null = the full record; starts null
   load: { status: "idle" | "loading" | "ready" | "error"; series?: Series; error?: DataError };
 };
 ```
@@ -210,8 +211,9 @@ type CaseState = {
 | `evidence` | "See the verdict" | `verdict` | None |
 | `verdict` | "Open a new case" | `clues` | Reset everything |
 | Any | `getSeries` fails | Same screen | `load.status = "error"` |
+| `evidence` | Years chosen, or "Full record" (`setPeriod`) | Same screen | Store `period`; `load` is untouched, so nothing is refetched |
 | Any | Rail step, Previous or Next (`goTo`) | That step, if the answers so far reach it | None: answers are kept |
-| `clues`, `scene`, `brief` | A different variable, place or hunch than before | Next step | Clear every later answer; the same answer keeps them |
+| `clues`, `scene`, `brief` | A different variable, place or hunch than before | Next step | Clear every later answer, and reset `period` to `null` when the variable or place changes; the same answer keeps them |
 
 A response from `getSeries` is ignored if the variable or place has changed since the request started.
 
@@ -366,9 +368,9 @@ Each screen has one `h1`, moves focus to it on entry, and works by keyboard at 3
 | `Clues` | `catalog`, `demoCases`, `onVariable(v)`, `onDemo(c)` | The current question with its live options as buttons; the suspect list with each definition and a count ("4 suspects left"); when one suspect is left, that suspect with its definition and a "Continue" button; when `nextQuestion` is `null` and several remain, the suspects as buttons; two "Open a solved case" buttons |
 | `PlacePicker` | `variable`, `regions`, `leads`, `place?`, `onPick(place)` | `WorldMap`: a three.js globe with the NASA Blue Marble image, every region's real outline dashed, the chosen region's outline filled translucent red, a pin for a typed point; it centres the chosen region or pin and zooms until the region's whole shape fits (closer for small regions), drags to rotate, zooms by wheel, pinch or its +/− buttons within the box, and a click inside an outline picks that region (a notice replaces it without WebGL). A typed point inside a region picks that region; outside every region it is a point named by its country ("one spot in France", or "one spot at sea"); the region list; labeled latitude and longitude inputs (hidden when `powerParameter` is `null`); the leads for the highlighted region and this variable, each with a source link; no leads section when there are none |
 | `CaseBrief` | `variable`, `placeName`, `hunch?`, `onConfirm(hunch)`, `onChange()` | "You want to know whether {name} in {place} has changed since {startYear}. Is that right?"; a radio group "Your hunch": rising, falling, no change; "Yes, show me the evidence" disabled until a hunch is chosen; "Change" |
-| `Evidence` | `load` (the `CaseState` load: status, `series`, `error`), `deseasonalized`, `onToggle()`, `onNext()` | `Chart`; a labeled checkbox "Remove the seasonal cycle", on by default; rate, "p-value (below 0.05 counts as significant)" and interval as text, in three stat tiles; the source line; a loading and an error state |
+| `Evidence` | `load` (the `CaseState` load: status, `series`, `error`), `deseasonalized`, `period`, `onToggle()`, `onPeriod(period \| null)`, `onNext()` | `Chart`, large, with titled axes, drawn from the chosen years; beside it a panel with: "Years to analyse" (From and To selects built from `selectableYears`, choices disabled where `validPeriod` is false, and a "Full record" reset), the rate, "p-value (below 0.05 counts as significant)" and interval as a list, all from `analyze` on the same slice as the chart, and a labeled checkbox "Remove the seasonal cycle", on by default; the source line; a loading and an error state |
 | `Chart` | `series`, `deseasonalized` | An Observable Plot line of monthly values (anomalies when on) with a straight-line fit, axis units, an accessible label and the caption "Line: straight-line fit to the points shown." The line is for illustration; the reported rate is Sen's slope |
-| `VerdictView` | `variable`, `placeName`, `series`, `deseasonalized`, `hunch`, `regions`, `onRestart()` | The verdict text and caveat; the hunch line; "Compare another region" select; a second verdict card beside the first; a line "These two regions are moving in opposite directions." when `oppositeDirections` is true; an error message for the second region that leaves the first card in place |
+| `VerdictView` | `variable`, `placeName`, `series`, `deseasonalized`, `period`, `hunch`, `regions`, `onRestart()` | The verdict text and caveat; the hunch line; with a `period`, the period's verdict first and the full record's beside it, both naming their years, the hunch line on the full record's, and the second region cut to the same years (or the not-enough-data message when they aren't a valid period there); "Compare another region" select; a second verdict card beside the first; a line "These two regions are moving in opposite directions." when `oppositeDirections` is true; an error message for the second region that leaves the first card in place |
 
 **Style:** one stylesheet with custom properties for color, spacing and type. Fira Sans (headings) and Overpass (body), self-hosted, with the system font stack as fallback. Colors from the NASA Space Apps Brand Guidelines. Text contrast of at least 4.5 to 1, except primary button labels on the Rocket Red hover (4.37 to 1), which are 19 px bold so they count as large text. Visible focus outline. No color-only meaning: rise, fall, mixed and none each carry a word.
 
