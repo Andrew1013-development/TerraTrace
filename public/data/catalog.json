@@ -31,7 +31,7 @@
   },
   {
     "id": "TS",
-    "name": "ground surface temperature",
+    "name": "surface temperature",
     "definition": "How warm the very surface of the land or sea is, averaged over the month.",
     "unit": "°C",
     "source": "NASA POWER monthly (MERRA-2), API v2.10.0",
