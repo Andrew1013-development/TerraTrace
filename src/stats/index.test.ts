@@ -133,3 +133,41 @@ describe("stats", () => {
     }
   });
 });
+
+// D3: calendar months must come from the dates. This series starts in April, skips one
+// month entirely (no date entry) and has one null value, so counting months by position
+// or by array index gives different answers.
+describe("seasonal paths with a gap and a mid-year start (D3)", () => {
+  const start = { year: 2000, month: 4 };
+  const dates = Array.from({ length: 240 }, (_, i) => {
+    const m = start.month - 1 + i;
+    return `${start.year + Math.floor(m / 12)}-${String((m % 12) + 1).padStart(2, "0")}`;
+  });
+  const cycle = (d: string) => 5 * Math.sin((2 * Math.PI * (Number(d.slice(5, 7)) - 1)) / 12);
+  const skipped = 60; // this month has no entry at all
+  const gap = 100; // this month is present but null
+  const kept = dates.filter((_, i) => i !== skipped);
+  const series = (f: (d: string, i: number) => number): Series => ({
+    variableId: "TEST", placeId: "test", unit: "u", source: "synthetic",
+    dates: kept, values: kept.map((d, i) => (i === gap ? null : f(d, i))),
+  });
+
+  test("analyze(true) uses the true calendar month of every value", () => {
+    const s = series((d, i) => cycle(d) + 0.002 * i + 0.3 * Math.sin(i * 1.7));
+    const valid = s.values.map((v, i) => [v, s.dates[i]] as const).filter(([v]) => v !== null);
+    const months = valid.map(([, d]) => Number(d.slice(5, 7)) - 1);
+    expect(analyze(s, true)!.mkP).toBeCloseTo(seasonalMannKendallP(valid.map(([v]) => v as number), months), 12);
+  });
+
+  test("deseasonalize removes a pure seasonal cycle, whatever the start month", () => {
+    const out = deseasonalize(series((d) => cycle(d)));
+    expect(out[gap]).toBeNull();
+    for (const v of out) if (v !== null) expect(Math.abs(v)).toBeLessThan(1e-9);
+  });
+});
+
+test("olsSlopeCi never returns NaN, even below 3 points (D11)", () => {
+  for (const [t, y] of [[[], []], [[0], [1]], [[0, 1], [5, 5]], [[0, 1], [1, 3]]] as const) {
+    expect(olsSlopeCi([...t], [...y]).every(Number.isFinite), JSON.stringify([t, y])).toBe(true);
+  }
+});

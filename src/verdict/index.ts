@@ -6,12 +6,15 @@ const CAVEAT =
   "Monthly values are often related to their neighbours, which can make a trend look more certain than it is.";
 
 // Absolute value at 2 significant figures as a plain decimal; toPrecision alone gives "1.2e-7".
+// Below 1e-10 it shows "0": toFixed throws past 100 digits and prints 20+ digits long before (D9).
 function formatRate(x: number): string {
   const a = Math.abs(x);
-  if (a === 0) return "0";
+  if (!(a >= 1e-10)) return "0";
   const rounded = Number(a.toPrecision(2));
-  const decimals = Math.max(0, 1 - Math.floor(Math.log10(rounded)));
-  return rounded.toFixed(decimals);
+  if (rounded < 1e21) return rounded.toFixed(Math.max(0, 1 - Math.floor(Math.log10(rounded))));
+  // toFixed switches to exponent form from 1e21: write the 2 digits and pad with zeros (D9).
+  const [mantissa, exponent] = a.toPrecision(2).split("e");
+  return mantissa.replace(".", "").padEnd(Number(exponent) + 1, "0");
 }
 
 const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);

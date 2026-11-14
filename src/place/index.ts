@@ -5,7 +5,8 @@ import type { Lead, Place, Region } from "../types";
 const DECIMAL = /^[+-]?(\d+(\.\d*)?|\.\d+)$/;
 
 function parseCoord(text: string, limit: number): number | null {
-  const s = text.trim().replace(",", ".");
+  // A pasted coordinate often uses the typographic minus "−" (U+2212) (D12).
+  const s = text.trim().replace(",", ".").replace("\u2212", "-");
   if (!DECIMAL.test(s)) return null;
   const n = Number(s);
   return Math.abs(n) <= limit ? n : null;
@@ -17,8 +18,11 @@ export function parsePoint(lat: string, lon: string): Place | null {
   return la === null || lo === null ? null : { kind: "point", lat: la, lon: lo };
 }
 
+// 2 decimals, with "-0.00" shown as "0.00", matching the place id in src/data (D8).
+const coord = (x: number) => x.toFixed(2).replace(/^-(0\.00)$/, "$1");
+
 export function placeName(place: Place, regions: Region[]): string {
-  if (place.kind === "point") return `${place.lat.toFixed(2)}, ${place.lon.toFixed(2)}`;
+  if (place.kind === "point") return `${coord(place.lat)}, ${coord(place.lon)}`;
   return regions.find((r) => r.id === place.id)?.name ?? place.id;
 }
 

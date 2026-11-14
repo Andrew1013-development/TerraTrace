@@ -65,7 +65,7 @@ def main() -> None:
         assert len(f["y"]) == MONTHS
         assert f["ols_ci"][0] < f["ols_ci"][1]
 
-    OUT.write_text(json.dumps(fixtures, indent=1, allow_nan=False) + "\n")
+    OUT.write_text(json.dumps(fixtures, indent=1, allow_nan=False) + "\n", newline="\n")  # LF on Windows too (D14)
     for f in fixtures:
         print(f'{f["name"]:15} original_p={f["original_p"]:.4g} seasonal_p={f["seasonal_p"]:.4g} '
               f'slope={f["original_slope"]:.5f} ols_ci=[{f["ols_ci"][0]:.5f}, {f["ols_ci"][1]:.5f}]')

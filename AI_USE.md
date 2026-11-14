@@ -1,7 +1,6 @@
 # AI use
 
 One line per meaningful use of AI tools. No AI model runs in the app.
-
 | When | Who | Tool | What it did | Checked by |
 |---|---|---|---|---|
 | Before the event | Team | Claude | Helped research and rank the candidate challenges, proposed the base concept for Case File, and helped draft the design, architecture, plan and task cards. The Project Submission Guide says SI should not be used to come up with the idea; how to describe this is still an open question for the organizers (DESIGN.md sections 2 and 8) | Team |
@@ -32,3 +31,4 @@ One line per meaningful use of AI tools. No AI model runs in the app.
 | Region names | Dev A | Claude Code | Applied Dev C's region names from issue 17 and added pipeline tests for them and the Tibet demo sentences | Dev A |
 | Agent guides | Dev A | Claude Code | Wrote GEMINI.md (Antigravity, integration reviewer) and AGENTS.md (Codex, back-end reviewer) from the architecture and the facts verified during the build | Dev A |
 | Back-end defects, Dev A | Dev A | Claude Code | Wrote failing tests and fixes for D2, D4, D5, D7, D8 (data half), D10, D13 and D14 from the definitive defect report | Dev A |
+| Back-end defects, Dev B | Dev A | Claude Code | Wrote tests and fixes for D3, D8 (place half), D9, D11, D12 and D14 (fixture script) in Dev B's folders, for Dev B and Dev C to review | Dev B, Dev C |

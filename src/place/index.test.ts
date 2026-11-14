@@ -54,3 +54,12 @@ describe("placeName and leadsFor", () => {
     expect(leadsFor(sampleLeads, "arctic-canada", "PRECTOTCORR")).toEqual([]);
   });
 });
+
+test('parsePoint accepts the typographic minus sign "−" (D12)', () => {
+  expect(parsePoint("−33.9", "−151,2")).toEqual({ kind: "point", lat: -33.9, lon: -151.2 });
+});
+
+test('placeName never shows "-0.00" (D8)', () => {
+  expect(placeName({ kind: "point", lat: -0.001, lon: -0.004 }, [])).toBe("0.00, 0.00");
+  expect(placeName({ kind: "point", lat: -0.006, lon: 0 }, [])).toBe("-0.01, 0.00");
+});
