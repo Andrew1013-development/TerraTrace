@@ -34,3 +34,4 @@ One line per meaningful use of AI tools. No AI model runs in the app.
 | Back-end defects, Dev B | Dev A | Claude Code | Wrote tests and fixes for D3, D8 (place half), D9, D11, D12 and D14 (fixture script) in Dev B's folders, for Dev B and Dev C to review | Dev B, Dev C |
 | Back-end defects, Dev C | Dev A | Claude Code | Proposed fixes for D1, D15, D16 and D17 (wording, formatter, point names, architecture text) for Dev C to accept, and ran a 50-case live-path test against an independent Python recomputation | Dev C |
 | Live POWER check | Dev A | Claude Code | Wrote the manual live check (8 points against golden values from the independent recomputation), its Vitest config and the manual workflow | Dev A |
+| Custom period, back end | Dev A | Claude Code | Planned the custom-period feature with Dev A (issue 46), and wrote the src/stats and src/verdict stubs, tests and implementation | Dev A, Dev C |
