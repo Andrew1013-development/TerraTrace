@@ -126,6 +126,7 @@ export function loadRegions(): Promise<Region[]>;
 export function loadLeads(): Promise<Lead[]>;
 export function getSeries(variable: Variable, place: Place): Promise<Series>;
 export const demoCases: DemoCase[]; // exactly 2
+export function loadLand(): Promise<Land>; // Natural Earth 1:110m land outlines, for the Scene map
 ```
 
 ### 4.3 Clues (`src/clues/index.ts`, Dev A)
@@ -143,6 +144,8 @@ export function nextQuestion(suspects: Variable[], askedIds: string[], questions
 export function parsePoint(lat: string, lon: string): Place | null;
 export function placeName(place: Place, regions: Region[]): string;
 export function leadsFor(leads: Lead[], regionId: string, variableId: string): Lead[];
+// The POWER grid cell a point's data comes from, [south, west, north, east]: 0.5° × 0.625° (MERRA-2) or 1° (CERES SYN1deg).
+export function powerCell(lat: number, lon: number, variable: { source: string }): [number, number, number, number];
 ```
 
 `placeName` gives a region's `name`, or for a point "the area around {lat}, {lon}" with 2 decimals, so it reads correctly after "in". A POWER point is a grid cell about 50 km across.
@@ -202,6 +205,8 @@ type CaseState = {
 | `evidence` | "See the verdict" | `verdict` | None |
 | `verdict` | "Open a new case" | `clues` | Reset everything |
 | Any | `getSeries` fails | Same screen | `load.status = "error"` |
+| Any | Rail step, Previous or Next (`goTo`) | That step, if the answers so far reach it | None: answers are kept |
+| `clues`, `scene`, `brief` | A different variable, place or hunch than before | Next step | Clear every later answer; the same answer keeps them |
 
 A response from `getSeries` is ignored if the variable or place has changed since the request started.
 
@@ -354,8 +359,8 @@ Each screen has one `h1`, moves focus to it on entry, and works by keyboard at 3
 | Component | Props | Shows |
 |---|---|---|
 | `Clues` | `catalog`, `demoCases`, `onVariable(v)`, `onDemo(c)` | The current question with its live options as buttons; the suspect list with each definition and a count ("4 suspects left"); when one suspect is left, that suspect with its definition and a "Continue" button; when `nextQuestion` is `null` and several remain, the suspects as buttons; two "Open a solved case" buttons |
-| `PlacePicker` | `variable`, `regions`, `leads`, `onPick(place)` | The region list; labeled latitude and longitude inputs (hidden when `powerParameter` is `null`); the leads for the highlighted region and this variable, each with a source link; no leads section when there are none |
-| `CaseBrief` | `variable`, `placeName`, `onConfirm(hunch)`, `onChange()` | "You want to know whether {name} in {place} has changed since {startYear}. Is that right?"; a radio group "Your hunch": rising, falling, no change; "Yes, show me the evidence" disabled until a hunch is chosen; "Change" |
+| `PlacePicker` | `variable`, `regions`, `leads`, `place?`, `onPick(place)` | A world map highlighting the chosen region, or zoomed to a typed point's POWER grid cell; the region list; labeled latitude and longitude inputs (hidden when `powerParameter` is `null`); the leads for the highlighted region and this variable, each with a source link; no leads section when there are none |
+| `CaseBrief` | `variable`, `placeName`, `hunch?`, `onConfirm(hunch)`, `onChange()` | "You want to know whether {name} in {place} has changed since {startYear}. Is that right?"; a radio group "Your hunch": rising, falling, no change; "Yes, show me the evidence" disabled until a hunch is chosen; "Change" |
 | `Evidence` | `load` (the `CaseState` load: status, `series`, `error`), `deseasonalized`, `onToggle()`, `onNext()` | `Chart`; a labeled checkbox "Remove the seasonal cycle", on by default; rate, "p-value (below 0.05 counts as significant)" and interval as text, in three stat tiles; the source line; a loading and an error state |
 | `Chart` | `series`, `deseasonalized` | An Observable Plot line of monthly values (anomalies when on) with a straight-line fit, axis units, an accessible label and the caption "Line: straight-line fit to the points shown." The line is for illustration; the reported rate is Sen's slope |
 | `VerdictView` | `variable`, `placeName`, `series`, `deseasonalized`, `hunch`, `regions`, `onRestart()` | The verdict text and caveat; the hunch line; "Compare another region" select; a second verdict card beside the first; a line "These two regions are moving in opposite directions." when `oppositeDirections` is true; an error message for the second region that leaves the first card in place |

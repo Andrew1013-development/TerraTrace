@@ -30,3 +30,15 @@ export function placeName(place: Place, regions: Region[]): string {
 export function leadsFor(leads: Lead[], regionId: string, variableId: string): Lead[] {
   return leads.filter((l) => l.regionId === regionId && l.variableId === variableId);
 }
+
+// The POWER grid cell a point's data comes from, as [south, west, north, east] (for the Scene map).
+// MERRA-2 variables: 0.5° by 0.625° cells centred on multiples of 0.5° and 0.625° from -180°.
+// CERES SYN1deg variables (named in the catalog source): 1° cells centred on half degrees.
+export function powerCell(lat: number, lon: number, variable: { source: string }): [number, number, number, number] {
+  const ceres = variable.source.includes("CERES");
+  const [dLat, dLon] = ceres ? [1, 1] : [0.5, 0.625];
+  const cLat = ceres ? Math.floor(lat) + 0.5 : Math.round(lat / dLat) * dLat;
+  const cLon = ceres ? Math.floor(lon) + 0.5 : Math.round((lon + 180) / dLon) * dLon - 180;
+  const clamp = (x: number) => Math.max(-90, Math.min(90, x));
+  return [clamp(cLat - dLat / 2), cLon - dLon / 2, clamp(cLat + dLat / 2), cLon + dLon / 2];
+}

@@ -63,3 +63,27 @@ test('placeName never shows "-0.00" (D8)', () => {
   expect(placeName({ kind: "point", lat: -0.001, lon: -0.004 }, [])).toBe("the area around 0.00, 0.00");
   expect(placeName({ kind: "point", lat: -0.006, lon: 0 }, [])).toBe("the area around -0.01, 0.00");
 });
+
+// Scene map (Dev C, with the user's go-ahead): the POWER grid cell a typed point's data comes from.
+import { powerCell } from "./index";
+
+describe("powerCell", () => {
+  const merra = { source: "NASA POWER monthly (MERRA-2), API v2.10.0" };
+  const ceres = { source: "NASA POWER monthly (CERES SYN1deg), API v2.10.0" };
+
+  test("MERRA-2 cells are 0.5° by 0.625°, centred on the grid nearest the point", () => {
+    expect(powerCell(10.5, 106.7, merra)).toEqual([10.25, 106.5625, 10.75, 107.1875]);
+    expect(powerCell(-33.9, 151.2, merra)).toEqual([-34.25, 150.9375, -33.75, 151.5625]);
+  });
+
+  test("CERES SYN1deg cells are 1° by 1°, centred on half degrees", () => {
+    expect(powerCell(10.5, 106.7, ceres)).toEqual([10, 106, 11, 107]);
+    expect(powerCell(-0.2, -0.2, ceres)).toEqual([-1, -1, 0, 0]);
+  });
+
+  test("cells never run past the poles", () => {
+    const [s, , n] = powerCell(90, 0, merra);
+    expect(n).toBe(90);
+    expect(s).toBe(89.75);
+  });
+});

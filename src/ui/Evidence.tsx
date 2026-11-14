@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
 import type { CaseState } from '../App'
 import { Chart } from './Chart'
+import { RulerIcon, ScaleIcon, SpeedIcon } from './icons'
 import { PrimaryButton } from './PrimaryButton'
 import { analyze, countValid } from '../stats'
 import { formatNumber } from '../verdict'
@@ -35,7 +36,10 @@ export function Evidence({ load, deseasonalized, onToggle, onNext }: EvidencePro
           {result ? (
             <dl className="tiles" role="group" aria-label="Trend statistics">
               <div className="tile">
-                <dt>Rate per decade</dt>
+                <dt>
+                  <SpeedIcon size={20} />
+                  Rate per decade
+                </dt>
                 <dd>
                   <span className="underline underline-red">
                     {formatNumber(result.slopePerDecade, true)} {series.unit}
@@ -43,13 +47,19 @@ export function Evidence({ load, deseasonalized, onToggle, onNext }: EvidencePro
                 </dd>
               </div>
               <div className="tile">
-                <dt>p-value (below 0.05 counts as significant)</dt>
+                <dt>
+                  <ScaleIcon size={20} />
+                  p-value (below 0.05 counts as significant)
+                </dt>
                 <dd>
                   <span className="underline underline-red">{pValue(result.mkP)}</span>
                 </dd>
               </div>
               <div className="tile">
-                <dt>95% interval</dt>
+                <dt>
+                  <RulerIcon size={20} />
+                  95% interval
+                </dt>
                 <dd>
                   <span className="underline underline-red">
                     {formatNumber(result.ci95[0])} to {formatNumber(result.ci95[1])} {series.unit}

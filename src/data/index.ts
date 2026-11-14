@@ -41,6 +41,12 @@ export function loadLeads(): Promise<Lead[]> {
   return loadFile("leads.json");
 }
 
+// Natural Earth 1:110m land outlines (public domain), for the Scene screen's map.
+export type Land = { type: "FeatureCollection"; features: { type: "Feature"; geometry: object }[] };
+export function loadLand(): Promise<Land> {
+  return loadFile("land.json");
+}
+
 const POWER_URL = "https://power.larc.nasa.gov/api/temporal/monthly/point";
 const END_YEAR = 2025;
 

@@ -1,4 +1,5 @@
 import { render, screen, within } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { sampleCatalog } from '../fixtures'
 import { Shell } from './Shell'
 
@@ -60,7 +61,7 @@ test('a solved case opened at the brief shows the skipped steps’ values', () =
   expect(within(rail()).getByText('10.50, 106.70')).toBeInTheDocument()
 })
 
-test('renders its children in main, has no heading of its own, and no buttons or links in the rail', () => {
+test('renders its children in main and has no heading of its own', () => {
   render(
     <Shell screen="clues">
       <h1>Q</h1>
@@ -68,8 +69,62 @@ test('renders its children in main, has no heading of its own, and no buttons or
   )
   expect(within(screen.getByRole('main')).getByRole('heading', { level: 1 })).toHaveTextContent('Q')
   expect(screen.getAllByRole('heading')).toHaveLength(1)
-  expect(within(rail()).queryByRole('button')).toBeNull()
-  expect(within(rail()).queryByRole('link')).toBeNull()
+})
+
+// Navigation: reached steps are buttons in the rail; Previous and Next sit under the screen.
+test('reached steps are buttons that go to that step; later steps are not', async () => {
+  const onGoTo = vi.fn()
+  render(
+    <Shell screen="brief" variable={v} placeName="Sahel" furthest={2} onGoTo={onGoTo}>
+      x
+    </Shell>,
+  )
+  await userEvent.click(within(rail()).getByRole('button', { name: /Scene/ }))
+  expect(onGoTo).toHaveBeenCalledWith('scene')
+  expect(within(rail()).getByRole('button', { name: /Clues/ })).toBeInTheDocument()
+  expect(within(rail()).queryByRole('button', { name: /Evidence/ })).toBeNull()
+  expect(within(rail()).queryByRole('button', { name: /Verdict/ })).toBeNull()
+})
+
+test('Previous goes back one step; Next is disabled until the next step is answered', async () => {
+  const onGoTo = vi.fn()
+  const { rerender } = render(
+    <Shell screen="scene" variable={v} furthest={1} onGoTo={onGoTo}>
+      x
+    </Shell>,
+  )
+  const nav = screen.getByRole('navigation', { name: 'Steps' })
+  await userEvent.click(within(nav).getByRole('button', { name: 'Previous' }))
+  expect(onGoTo).toHaveBeenCalledWith('clues')
+  expect(within(nav).getByRole('button', { name: 'Next' })).toBeDisabled()
+  rerender(
+    <Shell screen="scene" variable={v} placeName="Sahel" furthest={2} onGoTo={onGoTo}>
+      x
+    </Shell>,
+  )
+  await userEvent.click(within(screen.getByRole('navigation', { name: 'Steps' })).getByRole('button', { name: 'Next' }))
+  expect(onGoTo).toHaveBeenLastCalledWith('brief')
+})
+
+test('Previous is disabled on the first step', () => {
+  render(<Shell screen="clues">x</Shell>)
+  expect(screen.getByRole('button', { name: 'Previous' })).toBeDisabled()
+})
+
+test('clicking the current step starts that step again', async () => {
+  const onGoTo = vi.fn()
+  function Child() {
+    return <input aria-label="probe" defaultValue="" />
+  }
+  render(
+    <Shell screen="clues" furthest={0} onGoTo={onGoTo}>
+      <Child />
+    </Shell>,
+  )
+  await userEvent.type(screen.getByLabelText('probe'), 'typed')
+  await userEvent.click(within(rail()).getByRole('button', { name: /Clues/ }))
+  expect(screen.getByLabelText('probe')).toHaveValue('')
+  expect(onGoTo).not.toHaveBeenCalled()
 })
 
 test('shows the Built for logo with its alt text', () => {

@@ -3,6 +3,7 @@ import { getSeries, type DataError } from '../data'
 import { analyze, countValid } from '../stats'
 import type { Hunch, Region, Series, Variable, Verdict } from '../types'
 import { getVerdict, hunchLine, oppositeDirections } from '../verdict'
+import { ArrowDownIcon, ArrowUpIcon, FlatIcon, QuestionIcon } from './icons'
 import { PrimaryButton } from './PrimaryButton'
 import { ScreenHeading } from './ScreenHeading'
 
@@ -17,6 +18,14 @@ type VerdictViewProps = {
 }
 
 // Every kind carries a word; no kind gets its own colour (architecture section 9).
+// The icon only repeats the word; it is hidden from screen readers.
+const KIND_ICON: Record<Verdict['kind'], ReactNode> = {
+  rise: <ArrowUpIcon size={22} />,
+  fall: <ArrowDownIcon size={22} />,
+  mixed: <QuestionIcon size={22} />,
+  none: <FlatIcon size={22} />,
+}
+
 const KIND_WORD: Record<Verdict['kind'], string> = {
   rise: 'Rising',
   fall: 'Falling',
@@ -67,37 +76,43 @@ export function VerdictView({ variable, placeName, series, deseasonalized, hunch
           {verdict && <p className="hunch-line">{hunchLine(hunch, verdict)}</p>}
         </VerdictCard>
 
-        {witness.status === 'ready' && (
-          <VerdictCard variable={variable} place={witness.region.name} series={witness.series} verdict={witnessVerdict} />
-        )}
-        {witness.status === 'loading' && (
-          <p role="status" className="card witness-note">
-            Loading {witness.region.name}…
-          </p>
-        )}
-        {witness.status === 'error' && (
-          <p role="alert" className="card error witness-note">
-            {witness.error.message}
-          </p>
-        )}
+        <div className="witness">
+          {others.length > 0 && (
+            <div className="card compare-card">
+              <label className="field">
+                Compare another region
+                <select value={witness.status === 'idle' ? '' : witness.region.id} onChange={(e) => compareWith(e.target.value)}>
+                  <option value="">Choose a region</option>
+                  {others.map((r) => (
+                    <option key={r.id} value={r.id}>
+                      {r.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              {witness.status === 'idle' && (
+                <p className="compare-hint">See the same measurement somewhere else, side by side.</p>
+              )}
+            </div>
+          )}
+          {witness.status === 'ready' && (
+            <VerdictCard variable={variable} place={witness.region.name} series={witness.series} verdict={witnessVerdict} />
+          )}
+          {witness.status === 'loading' && (
+            <p role="status" className="card witness-note">
+              Loading {witness.region.name}…
+            </p>
+          )}
+          {witness.status === 'error' && (
+            <p role="alert" className="card error witness-note">
+              {witness.error.message}
+            </p>
+          )}
+        </div>
       </div>
 
       {verdict && witnessVerdict && oppositeDirections(verdict, witnessVerdict) && (
         <p className="opposite">These two regions are moving in opposite directions.</p>
-      )}
-
-      {others.length > 0 && (
-        <label className="compare">
-          Compare another region
-          <select value={witness.status === 'idle' ? '' : witness.region.id} onChange={(e) => compareWith(e.target.value)}>
-            <option value="">Choose a region</option>
-            {others.map((r) => (
-              <option key={r.id} value={r.id}>
-                {r.name}
-              </option>
-            ))}
-          </select>
-        </label>
       )}
 
       <div className="actions">
@@ -123,7 +138,10 @@ function VerdictCard({ variable, place, series, verdict, children }: VerdictCard
       </p>
       {verdict ? (
         <>
-          <p className="kind">{KIND_WORD[verdict.kind]}</p>
+          <p className="kind">
+            {KIND_ICON[verdict.kind]}
+            {KIND_WORD[verdict.kind]}
+          </p>
           <p className="verdict-text">{verdict.text}</p>
           <p className="caveat">{verdict.caveat}</p>
           {children}

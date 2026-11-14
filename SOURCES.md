@@ -37,6 +37,7 @@ Versions are from `package.json`; licences are from each package's own `package.
 
 | Item | Source | Licence |
 |---|---|---|
+| World land outlines (`public/data/land.json`) | Natural Earth 1:110m land, https://github.com/nvkelso/natural-earth-vector (`geojson/ne_110m_land.geojson`), accessed 2026-11-14; properties removed, coordinates rounded to 0.01° | Public domain |
 | `LICENSE` text | https://www.apache.org/licenses/LICENSE-2.0.txt | Apache-2.0 |
 | Project scaffold | `npm create vite@latest`, template `react-ts` | MIT |
 | Fira Sans Bold (`src/styles/fonts/`) | Latin `woff2` via Fontsource, https://fontsource.org/fonts/fira-sans, accessed 2026-11-14 | SIL OFL 1.1 |

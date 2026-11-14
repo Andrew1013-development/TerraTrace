@@ -51,3 +51,19 @@ test("an empty leads.json is valid", async () => {
   fetchMock.mockResolvedValue(json([]));
   await expect(data.loadLeads()).resolves.toEqual([]);
 });
+
+test("loadLand fetches data/land.json under BASE_URL, once", async () => {
+  const land = { type: "FeatureCollection", features: [] };
+  fetchMock.mockResolvedValue(json(land));
+  await expect(data.loadLand()).resolves.toEqual(land);
+  await data.loadLand();
+  expect(fetchMock).toHaveBeenCalledTimes(1);
+  expect(fetchMock).toHaveBeenCalledWith(`${import.meta.env.BASE_URL}data/land.json`);
+});
+
+test("the committed land.json is a FeatureCollection of polygons", async () => {
+  const land = (await import("../../public/data/land.json")).default as { type: string; features: { geometry: { type: string } }[] };
+  expect(land.type).toBe("FeatureCollection");
+  expect(land.features.length).toBeGreaterThan(100);
+  expect(land.features.every((f) => ["Polygon", "MultiPolygon"].includes(f.geometry.type))).toBe(true);
+});
