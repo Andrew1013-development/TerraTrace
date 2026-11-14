@@ -1,0 +1,21 @@
+# Node
+node_modules
+dist
+*.local
+*.log
+
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+venv/
+
+# Raw POWER responses cached by scripts/precompute.py
+scripts/.cache/
+
+# Editors and OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
