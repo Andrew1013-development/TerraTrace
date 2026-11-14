@@ -1,9 +1,37 @@
 import { caseReducer, initialState } from './App'
-import { sampleCatalog, sampleRegions } from './fixtures'
+import { sampleCatalog, sampleRegions, sampleSeries } from './fixtures'
 import type { Place } from './types'
 
 const v = sampleCatalog[0]
 const p: Place = { kind: 'region', id: sampleRegions[0].id }
+const loadingCase = { ...initialState, screen: 'evidence' as const, variable: v, place: p, load: { status: 'loading' as const } }
+
+test('a response for the current variable and place is stored as ready', () => {
+  const s = caseReducer(loadingCase, { type: 'loaded', variable: v, place: p, series: sampleSeries })
+  expect(s.load).toEqual({ status: 'ready', series: sampleSeries })
+})
+
+test('a late response for an old selection is ignored', () => {
+  const old = sampleCatalog[1]
+  expect(caseReducer(loadingCase, { type: 'loaded', variable: old, place: p, series: sampleSeries })).toBe(loadingCase)
+  const error = Object.assign(new Error('x'), { kind: 'network' as const })
+  expect(caseReducer(loadingCase, { type: 'failed', variable: v, place: { kind: 'region', id: 'other' }, error })).toBe(
+    loadingCase,
+  )
+})
+
+test('a failure stays on the same screen with the error', () => {
+  const error = Object.assign(new Error('x'), { kind: 'network' as const })
+  const s = caseReducer(loadingCase, { type: 'failed', variable: v, place: p, error })
+  expect(s).toMatchObject({ screen: 'evidence', load: { status: 'error', error } })
+})
+
+test('the toggle flips the seasonal setting without touching the load', () => {
+  const ready = { ...loadingCase, load: { status: 'ready' as const, series: sampleSeries } }
+  const s = caseReducer(ready, { type: 'toggle' })
+  expect(s.deseasonalized).toBe(false)
+  expect(s.load).toBe(ready.load)
+})
 
 test('starts on clues with the seasonal toggle on and nothing loaded', () => {
   expect(initialState).toEqual({ screen: 'clues', deseasonalized: true, load: { status: 'idle' } })
