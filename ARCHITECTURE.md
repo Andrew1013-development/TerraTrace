@@ -352,7 +352,7 @@ Each screen has one `h1`, moves focus to it on entry, and works by keyboard at 3
 | `Chart` | `series`, `deseasonalized` | An Observable Plot line of monthly values (anomalies when on) with a straight-line fit, axis units, an accessible label and the caption "Line: straight-line fit to the points shown." The line is for illustration; the reported rate is Sen's slope |
 | `VerdictView` | `variable`, `placeName`, `series`, `deseasonalized`, `hunch`, `regions`, `onRestart()` | The verdict text and caveat; the hunch line; "Compare another region" select; a second verdict card beside the first; a line "These two regions are moving in opposite directions." when `oppositeDirections` is true; an error message for the second region that leaves the first card in place |
 
-**Style:** one stylesheet with custom properties for color, spacing and type. System font stack. Text contrast of at least 4.5 to 1. Visible focus outline. No color-only meaning: rise, fall, mixed and none each carry a word.
+**Style:** one stylesheet with custom properties for color, spacing and type. Fira Sans (headings) and Overpass (body), self-hosted, with the system font stack as fallback. Colors from the NASA Space Apps Brand Guidelines. Text contrast of at least 4.5 to 1, except primary button labels on the Rocket Red hover (4.37 to 1), which are 19 px bold so they count as large text. Visible focus outline. No color-only meaning: rise, fall, mixed and none each carry a word.
 
 ## 10. Testing
 
