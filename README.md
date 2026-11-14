@@ -6,7 +6,7 @@ A guided web app for the NASA Space Apps Challenge 2026, challenge "Be An Earth 
 
 ## How a verdict is reached
 
-**The data.** Every value is a monthly figure from NASA POWER, whose air temperature and precipitation come from MERRA-2, a NASA reanalysis that combines observations with a weather model. A prepared region's value is the average of 9 points spread across its box, weighted so that points nearer the equator, which stand for more area, count more. A typed point is fetched live from POWER. Records start in 1981.
+**The data.** Every value is a monthly figure from NASA POWER. Most variables come from MERRA-2, a NASA reanalysis that combines observations with a weather model, and start in 1981. Sunlight at the ground and cloud cover come from CERES SYN1deg, NASA satellite measurements, and start in 2001, so each series uses one product. A prepared region's value is the average of 9 points spread across its box, weighted so that points nearer the equator, which stand for more area, count more. A typed point is fetched live from POWER.
 
 **Three checks.** The app asks three questions of the same record:
 
@@ -33,7 +33,7 @@ A record needs at least 120 months (10 years) with values. Below that, the app g
 - **Straight lines only.** A rise then a fall, or a sudden jump, can look like no trend.
 - **Neighbouring months are related.** This can make a trend look more certain than it is, so every verdict says so. In our tests, a series built with no trend but strong month-to-month memory still came out significant on the seasonal test (p = 0.0045).
 - **Regions are a coarse sample.** Nine points stand for a large box, so a region's value is an estimate, not an area average.
-- **A reanalysis is not a station record.** Results follow MERRA-2 and can differ from local weather-station records.
+- **A reanalysis or a satellite product is not a station record.** Results follow MERRA-2 or CERES SYN1deg and can differ from local weather-station records.
 - **A trend is not an explanation.** The app reports whether something changed, never why, and it does not predict the future.
 
 ## Run it
