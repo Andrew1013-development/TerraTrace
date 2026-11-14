@@ -1,0 +1,5 @@
+[
+  { "id": "sahel", "name": "Sahel", "bbox": [12, -17, 16, 35] },
+  { "id": "arctic-canada", "name": "Arctic Canada", "bbox": [68, -120, 78, -70] },
+  { "id": "mekong-delta", "name": "Mekong Delta", "bbox": [9, 104, 11, 107] }
+]
