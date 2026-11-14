@@ -5,7 +5,7 @@
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import { liveOptions, narrow, nextQuestion, questions } from "../clues";
 import { leadsFor, parsePoint, placeName } from "../place";
-import { analyze, countValid, deseasonalize } from "../stats";
+import { analyze, countValid, deseasonalize, selectableYears, slicePeriod, validPeriod } from "../stats";
 import type { Hunch, Lead, Region, Series, Variable, Verdict } from "../types";
 import { getVerdict, hunchLine, oppositeDirections } from "../verdict";
 import { type Power, stubFetch } from "./testFetch";
@@ -137,6 +137,45 @@ describe("4. Evidence: every catalog variable in every region", () => {
       }
     }
   }, 60_000); // 120 pairs × 2 O(n²) analyses take about 9 s locally, longer than Vitest's 5 s default
+});
+
+describe("4b. Custom period (issue 46): every catalog variable in every region", () => {
+  beforeEach(() => start());
+
+  test("the full record is a valid period, and its last 10 years give a clean result in both toggle states", async () => {
+    const [catalog, regions] = await loadAll();
+    for (const v of catalog) {
+      for (const r of regions) {
+        const at = `${v.id}/${r.id}`;
+        const s = await data.getSeries(v, { kind: "region", id: r.id });
+        const years = selectableYears(s);
+        expect(years[0], at).toBe(v.startYear);
+        expect(years[years.length - 1], at).toBe(2025); // the last complete year; 2026 is never offered
+        expect(validPeriod(s, years[0], years[years.length - 1]), at).toBe(true);
+        expect(validPeriod(s, 2017, 2025), `${at}: 9 years`).toBe(false);
+        const slice = slicePeriod(s, 2016, 2025);
+        for (const toggle of [true, false]) {
+          const t = analyze(slice, toggle);
+          expect(t, `${at} 2016-2025 toggle ${toggle}`).not.toBeNull();
+          expect(t!.n).toBe(120);
+          expect([t!.mkP, t!.slopePerDecade, ...t!.ci95].every(Number.isFinite), at).toBe(true);
+        }
+      }
+    }
+  }, 60_000);
+
+  test("a narrowed demo case names its years in both verdicts; the full record alone stays worded as today", async () => {
+    const [catalog, regions] = await loadAll();
+    const c = data.demoCases.find((x) => x.id === "tibet-temperature")!;
+    const v = catalog.find((x) => x.id === c.variableId)!;
+    const s = await data.getSeries(v, c.place);
+    const place = placeName(c.place, regions);
+    const full = getVerdict(analyze(s, true)!, v, place);
+    expect(full.text).toBe("Air temperature in the Tibetan Plateau has risen by about 0.23 °C per decade, and the evidence is strong.");
+    expect(getVerdict(analyze(s, true)!, v, place, [1981, 2025]).text).toBe(`From 1981 to 2025, ${full.text.charAt(0).toLowerCase()}${full.text.slice(1)}`);
+    const narrowed = getVerdict(analyze(slicePeriod(s, 2006, 2025), true)!, v, place, [2006, 2025]);
+    expect(narrowed.text).toMatch(/^From 2006 to 2025, air temperature in the Tibetan Plateau /);
+  });
 });
 
 describe("5. Verdict: every catalog variable in every region, both toggle states", () => {

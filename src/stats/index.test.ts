@@ -9,7 +9,10 @@ import {
   monthIndex,
   olsSlopeCi,
   seasonalMannKendallP,
+  selectableYears,
   senSlopePerMonth,
+  slicePeriod,
+  validPeriod,
 } from "./index";
 
 // Monthly dates from January of startYear, one per value.
@@ -170,4 +173,68 @@ test("olsSlopeCi never returns NaN, even below 3 points (D11)", () => {
   for (const [t, y] of [[[], []], [[0], [1]], [[0, 1], [5, 5]], [[0, 1], [1, 3]]] as const) {
     expect(olsSlopeCi([...t], [...y]).every(Number.isFinite), JSON.stringify([t, y])).toBe(true);
   }
+});
+
+// Custom period (issue 46): whole years, cut on the client.
+describe("custom period (issue 46)", () => {
+  // 1981-2025 like the real records: a trend, a seasonal cycle and some wobble.
+  const value = (i: number) => 20 + 0.002 * i + 5 * Math.sin((2 * Math.PI * (i % 12)) / 12) + 0.3 * Math.sin(i * 1.7);
+  const full = makeSeries(Array.from({ length: 45 * 12 }, (_, i) => value(i)), 1981);
+
+  test("selectableYears lists every complete year, ascending", () => {
+    const years = selectableYears(full);
+    expect(years).toHaveLength(45);
+    expect(years[0]).toBe(1981);
+    expect(years[44]).toBe(2025);
+    expect(years).toEqual([...years].sort((a, b) => a - b));
+  });
+
+  test("a year with a null month, or a month missing from dates, is not selectable", () => {
+    const withNull = { ...full, values: full.values.map((v, i) => (i === 12 * 10 + 3 ? null : v)) }; // April 1991
+    expect(selectableYears(withNull)).not.toContain(1991);
+    expect(selectableYears(withNull)).toHaveLength(44);
+    const keep = full.dates.map((d) => d !== "2000-07");
+    const missing = { ...full, dates: full.dates.filter((_, i) => keep[i]), values: full.values.filter((_, i) => keep[i]) };
+    expect(selectableYears(missing)).not.toContain(2000);
+  });
+
+  test("partial first and last years are not selectable", () => {
+    const partial = { ...full, dates: full.dates.slice(2, -6), values: full.values.slice(2, -6) }; // 1981-03 to 2025-06
+    const years = selectableYears(partial);
+    expect(years[0]).toBe(1982);
+    expect(years[years.length - 1]).toBe(2024);
+  });
+
+  test("validPeriod needs two selectable years and at least 10 of them", () => {
+    expect(validPeriod(full, 2016, 2025)).toBe(true); // exactly 10 years
+    expect(validPeriod(full, 1981, 2025)).toBe(true);
+    expect(validPeriod(full, 2017, 2025)).toBe(false); // 9 years
+    expect(validPeriod(full, 2025, 2016)).toBe(false); // reversed
+    expect(validPeriod(full, 1980, 2025)).toBe(false); // before the record
+    expect(validPeriod(full, 1981, 2026)).toBe(false); // after the record
+    const withNull = { ...full, values: full.values.map((v, i) => (i === 12 * 10 + 3 ? null : v)) };
+    expect(validPeriod(withNull, 1991, 2025)).toBe(false); // 1991 is incomplete
+    expect(validPeriod(withNull, 1990, 2025)).toBe(true); // a gap inside the period is allowed
+  });
+
+  test("slicePeriod keeps January of start to December of end, and nothing else changes", () => {
+    const before = structuredClone(full);
+    const s = slicePeriod(full, 1995, 2004);
+    expect(s.dates[0]).toBe("1995-01");
+    expect(s.dates[s.dates.length - 1]).toBe("2004-12");
+    expect(s.dates).toHaveLength(120);
+    expect(s.values).toEqual(full.values.slice(14 * 12, 24 * 12));
+    expect({ ...s, dates: [], values: [] }).toEqual({ ...full, dates: [], values: [] });
+    expect(full).toEqual(before);
+  });
+
+  test("analyze on a slice equals analyze on that span built directly", () => {
+    const s = slicePeriod(full, 1995, 2010);
+    const direct = makeSeries(full.values.slice(14 * 12, 30 * 12), 1995);
+    for (const toggle of [true, false]) {
+      expect(analyze({ ...s, variableId: direct.variableId, placeId: direct.placeId, unit: direct.unit, source: direct.source }, toggle))
+        .toEqual(analyze(direct, toggle));
+    }
+    expect(analyze(s, true)!.n).toBe(192);
+  });
 });

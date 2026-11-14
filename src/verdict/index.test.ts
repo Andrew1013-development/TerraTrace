@@ -141,3 +141,37 @@ test("formatNumber: 2 significant figures, a true minus sign, and + only when as
   expect(formatNumber(0, true)).toBe("0");
   expect(formatNumber(-1e-12)).toBe("0");
 });
+
+// Custom period (issue 46): with years, every sentence begins "From {start} to {end}, ".
+describe("verdict with years (issue 46)", () => {
+  const said = (res: TrendResult) => getVerdict(res, T2M, PLACE, [1995, 2025]);
+
+  test("each kind names its years, and the rest of the sentence is unchanged", () => {
+    expect(said(r(0.01, [0.1, 0.3], 0.2)).text).toBe(
+      "From 1995 to 2025, air temperature in Sahel has risen by about 0.20 °C per decade, and the evidence is strong.",
+    );
+    expect(said(r(0.01, [-0.3, -0.1], -0.2)).text).toBe(
+      "From 1995 to 2025, air temperature in Sahel has fallen by about 0.20 °C per decade, and the evidence is strong.",
+    );
+    expect(said(r(0.01, [-0.1, 0.3], 0.1)).text).toBe(
+      "From 1995 to 2025, air temperature in Sahel may be changing, by about 0.10 °C per decade, but our two checks disagree. Treat this as uncertain.",
+    );
+    expect(said(r(0.2, [-0.1, 0.3], 0.03)).text).toBe(
+      "From 1995 to 2025, we found no significant long-term trend in air temperature in Sahel. That is a real result: it has stayed within its normal ups and downs.",
+    );
+    expect(said(r(0.01, [0.1, 0.3], 0)).text).toBe(
+      "From 1995 to 2025, air temperature in Sahel may be changing, but our two checks disagree. Treat this as uncertain.",
+    );
+  });
+
+  test("years change only the text: kind and caveat are the same, and without years nothing changes", () => {
+    for (const res of [r(0.01, [0.1, 0.3]), r(0.01, [-0.3, -0.1], -0.2), r(0.01, [-0.1, 0.3]), r(0.2, [-0.1, 0.3])]) {
+      const plain = getVerdict(res, T2M, PLACE);
+      const dated = said(res);
+      expect(dated.kind).toBe(plain.kind);
+      expect(dated.caveat).toBe(CAVEAT);
+      expect(getVerdict(res, T2M, PLACE, undefined)).toEqual(plain);
+      expect(hunchLine("rise", dated)).toBe(hunchLine("rise", plain));
+    }
+  });
+});
