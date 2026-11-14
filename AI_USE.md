@@ -20,3 +20,4 @@ One line per meaningful use of AI tools. No AI model runs in the app.
 | Task A6 | Dev A | Claude Code | Surveyed POWER parameters by live call, drafted the 8 new definitions and tags, wrote the catalog tests and reran the precompute script | Dev A |
 | Task B3 | Dev B | Claude Code | Wrote the verdict stub, tests and implementation in src/verdict/ from ARCHITECTURE.md section 7.2; wording copied exactly | Dev B, then Dev C line by line |
 | Tasks C2 and C3 | Dev C | Claude Code | Wrote the Evidence screen, chart and their tests, the case brief and its tests, and switched the app from fixtures to the real data, stats and place modules | Dev C |
+| Task C4 | Dev C | Claude Code | Wrote the clues screen and its tests on top of the A4 engine, and the clues layout | Dev C |
