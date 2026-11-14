@@ -106,3 +106,156 @@ a {
   outline: 3px solid var(--neon-blue);
   outline-offset: 2px;
 }
+
+/* Hover and current-step underline: a 2px line that slides in from the left. */
+.underline {
+  position: relative;
+  display: inline-block;
+}
+.underline::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -3px;
+  height: 2px;
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform var(--snap) var(--ease);
+}
+.underline-yellow::after { background: var(--yellow); }
+.underline-red::after { background: var(--red); }
+
+/* Shell: rail beside the main panel on wide screens, a top strip on narrow ones. */
+.shell {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.rail {
+  position: relative;
+  isolation: isolate;
+  background: var(--deep-blue);
+  color: var(--white);
+  padding: var(--space-3) var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  overflow-wrap: anywhere;
+}
+.rail::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: url("../ui/brand/orbits.png") center / cover no-repeat;
+  opacity: 0.25;
+  mix-blend-mode: screen;
+  pointer-events: none;
+}
+.rail :focus-visible { outline-color: var(--yellow); }
+
+.rail-brand {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+.rail-brand img { flex: none; }
+.rail-name {
+  font-family: var(--font-head);
+  font-weight: 700;
+  font-size: var(--text-lg);
+}
+.rail-strip-step {
+  margin-left: auto;
+  font-size: var(--text-sm);
+  color: var(--rail-text);
+}
+
+.rail-details summary {
+  cursor: pointer;
+  color: var(--rail-text);
+  font-size: var(--text-sm);
+  padding: var(--space-2) 0;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+.rail-details summary::before { content: "▸"; }
+.rail-details[open] summary::before { content: "▾"; }
+
+.rail-steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.rail-step {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding-left: var(--space-3);
+  border-left: 3px solid transparent;
+}
+.rail-step-label {
+  font-size: var(--text-sm);
+  color: var(--rail-text);
+}
+.rail-step.is-todo .rail-step-label,
+.rail-step.is-todo .rail-step-value { color: var(--rail-dim); }
+.rail-step.is-current { border-left-color: var(--yellow); }
+.rail-step.is-current .rail-step-label { color: var(--yellow); font-weight: 700; }
+.rail-step.is-current .underline::after,
+.rail-step.is-done:hover .underline::after { transform: scaleX(1); }
+
+.built-for {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-4);
+  background: var(--deep-blue);
+  font-size: var(--text-sm);
+  color: var(--rail-text);
+}
+.built-for img {
+  width: 150px;
+  max-width: 100%;
+  height: auto;
+}
+
+.panel {
+  flex: 1;
+  min-width: 0;
+  padding: var(--space-5) var(--space-4);
+}
+.context {
+  margin: 0 0 var(--space-1);
+  font-size: var(--text-sm);
+  color: var(--muted);
+}
+
+@media (min-width: 768px) {
+  .shell {
+    display: grid;
+    grid-template-columns: 240px minmax(0, 1fr);
+    grid-template-rows: 1fr auto;
+    grid-template-areas: "rail panel" "foot panel";
+  }
+  .rail {
+    grid-area: rail;
+    padding: var(--space-5) var(--space-4);
+    gap: var(--space-5);
+  }
+  .panel { grid-area: panel; padding: var(--space-6); }
+  .built-for {
+    grid-area: foot;
+    border-top: 1px solid rgba(201, 210, 245, 0.3);
+  }
+  .rail-strip-step,
+  .rail-details summary { display: none; }
+}

@@ -1,11 +1,23 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import App from './App'
+
+const stepFor: Record<string, string> = {
+  'Gather the clues': 'Clues',
+  'Pick the scene': 'Scene',
+  'Case brief': 'Brief',
+  'The evidence': 'Evidence',
+  'The verdict': 'Verdict',
+}
 
 async function expectScreen(name: string) {
   const heading = await screen.findByRole('heading', { level: 1, name })
   expect(heading).toHaveFocus()
   expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1)
+  const rail = screen.getByRole('complementary', { name: 'Case progress' })
+  const current = within(rail).getAllByRole('listitem').filter((li) => li.getAttribute('aria-current') === 'step')
+  expect(current).toHaveLength(1)
+  expect(current[0]).toHaveTextContent(stepFor[name])
 }
 
 test('walks clues, scene, brief, evidence, verdict and back to clues', async () => {

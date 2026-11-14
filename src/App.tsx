@@ -5,6 +5,7 @@ import { CaseBrief } from './ui/CaseBrief'
 import { Clues } from './ui/Clues'
 import { Evidence } from './ui/Evidence'
 import { PlacePicker } from './ui/PlacePicker'
+import { Shell } from './ui/Shell'
 import { VerdictView } from './ui/VerdictView'
 import './styles/app.css'
 
@@ -64,9 +65,29 @@ const demoCases: DemoCase[] = [
   { id: 'synthetic-demo', title: 'Synthetic demo case', variableId: catalog[0].id, place: { kind: 'region', id: regions[0].id } },
 ]
 
+// shortcut: stands in for placeName from src/place until Task B4 lands; delete then.
+function tempPlaceName(place: Place | undefined): string | undefined {
+  if (!place) return undefined
+  if (place.kind === 'point') return `${place.lat.toFixed(2)}, ${place.lon.toFixed(2)}`
+  return regions.find((r) => r.id === place.id)?.name ?? place.id
+}
+
 export default function App() {
   const [state, dispatch] = useReducer(caseReducer, initialState)
 
+  return (
+    <Shell
+      screen={state.screen}
+      variable={state.variable}
+      placeName={tempPlaceName(state.place)}
+      hunch={state.hunch}
+    >
+      <CurrentScreen state={state} dispatch={dispatch} />
+    </Shell>
+  )
+}
+
+function CurrentScreen({ state, dispatch }: { state: CaseState; dispatch: (e: CaseEvent) => void }) {
   switch (state.screen) {
     case 'clues':
       return (
