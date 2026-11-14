@@ -8,3 +8,4 @@ One line per meaningful use of AI tools. No AI model runs in the app.
 | Task A1 | Dev A | Claude Code | Generated the project scaffold configuration, CI and deploy workflows, `.gitignore`, placeholder page, toolchain test and starter documents | Dev A |
 | Task B1 | Dev B | Claude Code | Wrote the shared types (copied from ARCHITECTURE.md section 4.1), the synthetic fixtures and their test | Dev B |
 | Tasks C1 and frontend design | Dev C | Claude Code | Researched dashboard references on Mobbin and the Space Apps brand guide, drafted the frontend design and plan, and wrote the app reducer, placeholder screens, dashboard shell, brand styles, primary button with star burst, and their tests | Dev C |
+| Task A2 | Dev A | Claude Code | Captured the POWER sample, wrote the `getSeries` tests and implemented `getSeries` and `DataError` | Dev A |
