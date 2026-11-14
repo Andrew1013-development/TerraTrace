@@ -1,5 +1,6 @@
 import { useEffect, useReducer, useState } from 'react'
 import { demoCases, getSeries, loadCatalog, loadRegions, type DataError } from './data'
+import { placeName } from './place'
 import type { Hunch, Place, Region, Series, Variable } from './types'
 import { CaseBrief } from './ui/CaseBrief'
 import { Clues } from './ui/Clues'
@@ -72,13 +73,6 @@ export function caseReducer(state: CaseState, event: CaseEvent): CaseState {
 
 type CaseFiles = { catalog: Variable[]; regions: Region[] }
 
-// shortcut: stands in for placeName from src/place until Task B4 lands; delete then.
-function tempPlaceName(place: Place | undefined, regions: Region[]): string | undefined {
-  if (!place) return undefined
-  if (place.kind === 'point') return `${place.lat.toFixed(2)}, ${place.lon.toFixed(2)}`
-  return regions.find((r) => r.id === place.id)?.name ?? place.id
-}
-
 export default function App() {
   const [state, dispatch] = useReducer(caseReducer, initialState)
   const [files, setFiles] = useState<CaseFiles | DataError>()
@@ -111,7 +105,7 @@ export default function App() {
     <Shell
       screen={state.screen}
       variable={state.variable}
-      placeName={tempPlaceName(state.place, regions)}
+      placeName={state.place && placeName(state.place, regions)}
       hunch={state.hunch}
     >
       {files === undefined && <p role="status">Loading the case files…</p>}
@@ -160,7 +154,7 @@ function CurrentScreen({ state, dispatch, files: { catalog, regions } }: ScreenP
       return (
         <CaseBrief
           variable={state.variable}
-          placeName={tempPlaceName(state.place, regions) ?? ''}
+          placeName={placeName(state.place, regions)}
           onConfirm={(hunch) => dispatch({ type: 'confirm', hunch })}
           onChange={() => dispatch({ type: 'change' })}
         />

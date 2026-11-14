@@ -2,8 +2,8 @@ import { useMemo } from 'react'
 import type { CaseState } from '../App'
 import { Chart } from './Chart'
 import { PrimaryButton } from './PrimaryButton'
+import { analyze, countValid } from '../stats'
 import { ScreenHeading } from './ScreenHeading'
-import { analyzeOrSample, validCount } from './statsBridge'
 
 type EvidenceProps = {
   load: CaseState['load']
@@ -19,7 +19,7 @@ const pValue = (p: number) => (p < 0.001 ? '< 0.001' : p.toFixed(3))
 
 export function Evidence({ load, deseasonalized, onToggle, onNext }: EvidenceProps) {
   const series = load.series
-  const result = useMemo(() => (series ? analyzeOrSample(series, deseasonalized) : null), [series, deseasonalized])
+  const result = useMemo(() => (series ? analyze(series, deseasonalized) : null), [series, deseasonalized])
 
   return (
     <section className="evidence">
@@ -61,7 +61,7 @@ export function Evidence({ load, deseasonalized, onToggle, onNext }: EvidencePro
             </dl>
           ) : (
             <p className="notice">
-              Not enough data for a verdict. We need at least 120 months and this record has {validCount(series)}.
+              Not enough data for a verdict. We need at least 120 months and this record has {countValid(series)}.
             </p>
           )}
 

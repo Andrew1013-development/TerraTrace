@@ -1,7 +1,7 @@
 import * as Plot from '@observablehq/plot'
 import { useEffect, useRef } from 'react'
+import { deseasonalize } from '../stats'
 import type { Series } from '../types'
-import { plottedValues } from './statsBridge'
 
 type ChartProps = { series: Series; deseasonalized: boolean }
 
@@ -11,7 +11,7 @@ export function Chart({ series, deseasonalized }: ChartProps) {
   const label = `Monthly ${deseasonalized ? 'differences from the usual value' : 'values'} in ${series.unit}, ${series.dates[0]} to ${series.dates[series.dates.length - 1]}, with a straight-line fit`
 
   useEffect(() => {
-    const values = plottedValues(series, deseasonalized)
+    const values = deseasonalized ? deseasonalize(series) : series.values
     const data = series.dates.map((d, i) => {
       const [year, month] = d.split('-').map(Number)
       return { date: new Date(Date.UTC(year, month - 1, 1)), value: values[i] }
