@@ -5,18 +5,27 @@ import { analyze, countValid } from '../stats'
 import type { CaseState } from '../App'
 import { Evidence } from './Evidence'
 
-vi.mock('../stats', () => ({
+vi.mock('../stats', async () => ({
   analyze: vi.fn(),
   countValid: vi.fn(),
   deseasonalize: vi.fn(() => []),
+  // The real period functions (issue 46); only analyze and countValid are stubbed.
+  ...(({ selectableYears, validPeriod, slicePeriod }) => ({ selectableYears, validPeriod, slicePeriod }))(
+    await vi.importActual<typeof import('../stats')>('../stats'),
+  ),
 }))
-vi.mock('./Chart', () => ({ Chart: ({ fit }: { fit?: boolean }) => <figure aria-label="chart" data-fit={String(fit)} /> }))
+// The stand-in chart reports which months it was given.
+vi.mock('./Chart', () => ({
+  Chart: (p: { series: { dates: string[] }; fit?: boolean; children?: React.ReactNode }) => (
+    <figure aria-label={`chart ${p.series.dates[0]} to ${p.series.dates.at(-1)}`} data-fit={String(p.fit)}>{p.children}</figure>
+  ),
+}))
 vi.mock('./starBurst', () => ({ starBurst: vi.fn() }))
 
 const ready: CaseState['load'] = { status: 'ready', series: sampleSeries }
 
 function renderEvidence(over: Partial<Parameters<typeof Evidence>[0]> = {}) {
-  const props = { load: ready, deseasonalized: true, onToggle: vi.fn(), onNext: vi.fn(), onBack: vi.fn(), ...over }
+  const props = { load: ready, deseasonalized: true, period: null, onToggle: vi.fn(), onPeriod: vi.fn(), onNext: vi.fn(), onBack: vi.fn(), ...over }
   return { props, ...render(<Evidence {...props} />) }
 }
 
@@ -41,7 +50,7 @@ test('turning the toggle off calls analyze with false and shows the new p-value'
   expect(screen.getByText('0.235')).toBeInTheDocument()
 })
 
-test('rate, p-value and interval are three labeled tiles in one group', () => {
+test('rate, p-value and interval are a labeled list in one group', () => {
   renderEvidence()
   const group = screen.getByRole('group', { name: 'Trend statistics' })
   expect(within(group).getAllByRole('term').map((t) => t.textContent)).toEqual([
@@ -133,10 +142,10 @@ test('a negative rate and an interval across zero carry their signs', () => {
 // Integration report, defect 5.
 test('the chart draws its fit line only when there is a result', () => {
   const { rerender, props } = renderEvidence()
-  expect(screen.getByRole('figure', { name: 'chart' })).toHaveAttribute('data-fit', 'true')
+  expect(screen.getByRole('figure', { name: /^chart/ })).toHaveAttribute('data-fit', 'true')
   vi.mocked(analyze).mockReturnValue(null)
   rerender(<Evidence {...props} deseasonalized={false} />)
-  expect(screen.getByRole('figure', { name: 'chart' })).toHaveAttribute('data-fit', 'false')
+  expect(screen.getByRole('figure', { name: /^chart/ })).toHaveAttribute('data-fit', 'false')
 })
 
 // Integration report, defect 9.
@@ -145,4 +154,34 @@ test('a percent series gives its rate and interval in percentage points', () => 
   renderEvidence({ load: { status: 'ready', series: { ...sampleSeries, unit: '%' } } })
   expect(screen.getByText('+0.76 percentage points')).toBeInTheDocument()
   expect(screen.getByText('+0.50 to +1.0 percentage points')).toBeInTheDocument()
+})
+
+test('the year pickers offer whole years and disable any span under 10 years', () => {
+  renderEvidence()
+  const from = screen.getByRole('combobox', { name: 'From' })
+  const to = screen.getByRole('combobox', { name: 'To' })
+  expect(from).toHaveValue('2000')
+  expect(to).toHaveValue('2014')
+  const startOptions = within(from).getAllByRole('option') as HTMLOptionElement[]
+  expect(startOptions.map((o) => o.value)).toEqual(Array.from({ length: 15 }, (_, i) => String(2000 + i)))
+  // Ending in 2014, a start of 2005 is 10 years (allowed); 2006 is 9 (not offered).
+  expect(startOptions.find((o) => o.value === '2005')!.disabled).toBe(false)
+  expect(startOptions.find((o) => o.value === '2006')!.disabled).toBe(true)
+  expect(screen.getByRole('button', { name: 'Full record' })).toBeDisabled()
+})
+
+test('choosing a start year asks for that period', async () => {
+  const { props } = renderEvidence()
+  await userEvent.selectOptions(screen.getByRole('combobox', { name: 'From' }), '2004')
+  expect(props.onPeriod).toHaveBeenCalledWith({ start: 2004, end: 2014 })
+})
+
+test('a chosen period cuts the chart and the numbers to the same months, and Full record clears it', async () => {
+  const { props } = renderEvidence({ period: { start: 2004, end: 2014 } })
+  expect(screen.getByRole('figure', { name: 'chart 2004-01 to 2014-12' })).toBeInTheDocument()
+  const [analysed] = vi.mocked(analyze).mock.lastCall!
+  expect(analysed.dates[0]).toBe('2004-01')
+  expect(analysed.dates).toHaveLength(11 * 12)
+  await userEvent.click(screen.getByRole('button', { name: 'Full record' }))
+  expect(props.onPeriod).toHaveBeenCalledWith(null)
 })

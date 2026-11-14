@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react'
+import { act, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { sampleCatalog } from '../fixtures'
 import type { DemoCase } from '../types'
@@ -12,7 +12,7 @@ vi.mock('../clues', async (importOriginal) => ({
   questions: [
     {
       id: 'sphere',
-      text: 'Is it about the air or the land?',
+      text: 'Is it about {options}?', // filled with the live choices by questionText
       options: [
         { label: 'The air', tags: ['air'] },
         { label: 'The land', tags: ['land'] },
@@ -95,13 +95,35 @@ test('when no question can split further, the suspects are buttons', async () =>
   expect(onVariable).toHaveBeenCalledWith(sampleCatalog[2])
 })
 
-test('Start over appears after an answer and brings back all suspects', async () => {
+test('there is no Start over button: the rail restarts a step', async () => {
   const { user } = renderClues()
-  expect(screen.queryByRole('button', { name: 'Start over' })).toBeNull()
   await user.click(screen.getByRole('button', { name: 'Hotter or colder' }))
-  await user.click(screen.getByRole('button', { name: 'Start over' }))
-  expect(count()).toHaveTextContent('4 suspects left')
-  expect(question()).toHaveAccessibleName('What would you notice?')
+  expect(screen.queryByRole('button', { name: 'Start over' })).toBeNull()
+})
+
+const art = () => document.querySelector('.clue-art [data-art]')?.getAttribute('data-art')
+
+test('the illustration shows a question mark, then the art for the hovered or focused choice', async () => {
+  const { user } = renderClues()
+  expect(art()).toBe('question')
+  await user.hover(screen.getByRole('button', { name: 'Hotter or colder' }))
+  expect(art()).toBe('fire')
+  await user.unhover(screen.getByRole('button', { name: 'Hotter or colder' }))
+  expect(art()).toBe('question')
+  act(() => screen.getByRole('button', { name: 'Wetter or drier' }).focus())
+  expect(art()).toBe('rain')
+})
+
+test('the illustration is decorative, hidden from screen readers', () => {
+  renderClues()
+  expect(document.querySelector('.clue-art')).toHaveAttribute('aria-hidden', 'true')
+})
+
+test('the suspect list scrolls inside a focusable region', () => {
+  renderClues()
+  const region = screen.getByRole('region', { name: 'Suspect list' })
+  expect(region).toHaveAttribute('tabindex', '0')
+  expect(within(region).getByRole('list', { name: 'Suspects' })).toBeInTheDocument()
 })
 
 const focused = () =>
@@ -114,8 +136,6 @@ test('focus moves to what comes next after each answer, never to the page body',
   expect(focused()).toBe('Is it about the air or the land?')
   await user.click(screen.getByRole('button', { name: 'The air' }))
   expect(focused()).toBe('air temperature')
-  await user.click(screen.getByRole('button', { name: 'Start over' }))
-  expect(focused()).toBe('What would you notice?')
 })
 
 test('focus stays on the heading when the screen first appears', () => {
@@ -130,4 +150,20 @@ test('each solved case button calls onDemo with that case', async () => {
   expect(onDemo).toHaveBeenCalledWith(demoCases[1])
   await user.click(within(solved).getByRole('button', { name: 'Is the Arctic getting wetter?' }))
   expect(onDemo).toHaveBeenLastCalledWith(demoCases[0])
+})
+
+test('leaving with the mouse falls back to the choice that has keyboard focus', async () => {
+  const { user } = renderClues()
+  act(() => screen.getByRole('button', { name: 'Wetter or drier' }).focus())
+  await user.hover(screen.getByRole('button', { name: 'Hotter or colder' }))
+  expect(art()).toBe('fire')
+  await user.unhover(screen.getByRole('button', { name: 'Hotter or colder' }))
+  expect(art()).toBe('rain')
+})
+
+test('after an answer, focusing a choice on the next question shows its art', async () => {
+  const { user } = renderClues()
+  await user.click(screen.getByRole('button', { name: 'Hotter or colder' }))
+  act(() => screen.getByRole('button', { name: 'The air' }).focus())
+  expect(art()).toBe('wind')
 })

@@ -30,11 +30,13 @@ function memo<T>(key: string, load: () => Promise<T>): Promise<T> {
 }
 
 const staticFile = (path: string) => `${import.meta.env.BASE_URL}data/${path}`;
-// All three files are arrays; any other body (a corrupted deploy) must not reach the screens.
-const loadFile = <T,>(name: string) =>
+// A body of the wrong shape (a corrupted deploy) must not reach the screens: the catalog, regions
+// and leads are arrays, the map files are objects.
+const isObject = (body: unknown) => typeof body === "object" && body !== null && !Array.isArray(body);
+const loadFile = <T,>(name: string, ok: (body: unknown) => boolean = Array.isArray) =>
   memo(name, async () => {
     const body = await fetchJson(staticFile(name));
-    if (!Array.isArray(body)) throw new DataError("unavailable");
+    if (!ok(body)) throw new DataError("unavailable");
     return body as T;
   });
 
@@ -48,6 +50,23 @@ export function loadRegions(): Promise<Region[]> {
 
 export function loadLeads(): Promise<Lead[]> {
   return loadFile("leads.json");
+}
+
+// Natural Earth 1:110m land outlines (public domain), for the Scene screen's map.
+
+// Each region's real outline trimmed to its box (scripts/make_map_shapes.py), for the Scene map.
+export type RegionShapes = Record<string, { type: "MultiPolygon"; coordinates: number[][][][]; outline: string }>;
+export function loadRegionShapes(): Promise<RegionShapes> {
+  return loadFile("region-shapes.json", isObject);
+}
+
+// Country outlines and names, for naming a typed point outside every region.
+export type Countries = {
+  type: "FeatureCollection";
+  features: { type: "Feature"; properties: { name: string }; geometry: { type: string; coordinates: unknown } }[];
+};
+export function loadCountries(): Promise<Countries> {
+  return loadFile("countries.json", isObject);
 }
 
 const POWER_URL = "https://power.larc.nasa.gov/api/temporal/monthly/point";

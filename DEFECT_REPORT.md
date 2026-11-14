@@ -130,7 +130,7 @@ The fixes below change text or contracts that belong to Dev C (`ARCHITECTURE.md`
 
 ### IN-6. Region lists start some names with a lower-case "the"
 
-- **Fix:** `listName` in `src/place/index.ts` starts a name with a capital. Used by the scene radio list, the "Compare another region" select and the "Case so far" panel. Sentences keep "the Sahel".
+- **Fix:** `listName` in `src/place/index.ts` starts a name with a capital. Used by the scene's "Prepared region" list, the "Compare another region" select and the "Case so far" panel. Sentences keep "the Sahel".
 - **Tests:** `src/place/index.test.ts`, `src/ui/PlacePicker.test.tsx`, `src/ui/VerdictView.test.tsx`, `src/ui/Shell.test.tsx`.
 
 ### IN-7. "These two regions" also appears when one place is a point

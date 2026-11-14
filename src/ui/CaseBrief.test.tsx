@@ -59,3 +59,9 @@ test('each label maps to its hunch value', async () => {
     expect(onConfirm).toHaveBeenLastCalledWith(value)
   }
 })
+
+test('a hunch already given comes back selected, so a revisited brief keeps it', () => {
+  render(<CaseBrief variable={v} placeName="Arctic Canada" hunch="fall" onConfirm={vi.fn()} onChange={vi.fn()} />)
+  expect(screen.getByRole('radio', { name: 'falling' })).toBeChecked()
+  expect(screen.getByRole('button', { name: 'Yes, show me the evidence' })).toBeEnabled()
+})

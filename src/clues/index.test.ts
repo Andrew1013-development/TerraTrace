@@ -77,3 +77,32 @@ test("every question id is unique and every option has at least one tag", () => 
   // Every variable needs a tag from the first question, so it must use these words.
   expect(questions[0].options.flatMap((o) => o.tags).sort()).toEqual(["air", "land", "life", "water"]);
 });
+
+// Question text names only the choices shown (Dev C, for Dev A; see the PR).
+import { questionText } from "./index";
+
+const opt = (label: string) => ({ label, tags: [] as string[] });
+const sphereQ: Question = {
+  id: "sphere",
+  text: "Is your question about {options}?",
+  options: [opt("The air"), opt("Water"), opt("The land"), opt("Living things")],
+};
+
+test("questionText names only the live choices, joined in plain English", () => {
+  expect(questionText(sphereQ, [opt("The air"), opt("The land")])).toBe("Is your question about the air or the land?");
+  expect(questionText(sphereQ, [opt("The air"), opt("Water"), opt("The land")])).toBe(
+    "Is your question about the air, water or the land?",
+  );
+  expect(questionText(sphereQ, [opt("Water")])).toBe("Is your question about water?");
+});
+
+test("questionText leaves text without the placeholder unchanged", () => {
+  const q: Question = { id: "feel", text: "What would you notice changing?", options: [opt("A"), opt("B")] };
+  expect(questionText(q, q.options)).toBe("What would you notice changing?");
+});
+
+test("questions that list their choices use the placeholder, so the text always matches the buttons", () => {
+  for (const id of ["sphere", "wet", "extreme"]) {
+    expect(questions.find((q) => q.id === id)?.text).toContain("{options}");
+  }
+});

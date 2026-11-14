@@ -1,6 +1,6 @@
 export type Place =
   | { kind: "region"; id: string }
-  | { kind: "point"; lat: number; lon: number };
+  | { kind: "point"; lat: number; lon: number; name?: string }; // name: "one spot in France", shown instead of the numbers
 
 export type Variable = {
   id: string;                    // equals the POWER parameter name when there is one

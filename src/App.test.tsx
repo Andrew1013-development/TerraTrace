@@ -4,10 +4,14 @@ import App from './App'
 import { loadCatalog } from './data'
 import { sampleCatalog, sampleResult } from './fixtures'
 
-vi.mock('./stats', () => ({
+vi.mock('./stats', async () => ({
   analyze: vi.fn(() => sampleResult),
   countValid: vi.fn(() => 180),
   deseasonalize: vi.fn(() => []),
+  // The real period functions (issue 46); only analyze and countValid are stubbed.
+  ...(({ selectableYears, validPeriod, slicePeriod }) => ({ selectableYears, validPeriod, slicePeriod }))(
+    await vi.importActual<typeof import('./stats')>('./stats'),
+  ),
 }))
 vi.mock('./ui/Chart', () => ({ Chart: () => <figure aria-label="chart" /> }))
 // No question can split, so the clues screen lists the suspects as buttons; Clues.test.tsx covers the questions.
@@ -24,6 +28,8 @@ vi.mock('./data', async () => {
     loadCatalog: vi.fn(() => Promise.resolve(f.sampleCatalog)),
     loadRegions: vi.fn(() => Promise.resolve(f.sampleRegions)),
     loadLeads: vi.fn(() => Promise.resolve(f.sampleLeads)),
+    loadRegionShapes: vi.fn(() => Promise.resolve({})),
+    loadCountries: vi.fn(() => Promise.resolve({ type: 'FeatureCollection', features: [] })),
     demoCases: [{ id: 'demo', title: 'Synthetic demo', variableId: 'T2M', place: { kind: 'region', id: 'sahel' } }],
   }
 })
@@ -75,7 +81,7 @@ test('walks clues, scene, brief, evidence, verdict and back to clues', async () 
   await user.click(await screen.findByRole('button', { name: 'air temperature' }))
 
   await expectScreen('Pick the scene')
-  await user.click(screen.getByRole('radio', { name: 'Sahel' }))
+  await user.selectOptions(screen.getByRole('combobox', { name: 'Prepared region' }), 'Sahel')
   await user.click(screen.getByRole('button', { name: 'Use this region' }))
 
   await expectScreen('Case brief')
@@ -95,7 +101,7 @@ test('Change on the brief goes back to the clues', async () => {
   const user = userEvent.setup()
   render(<App />)
   await user.click(await screen.findByRole('button', { name: 'air temperature' }))
-  await user.click(screen.getByRole('radio', { name: 'Sahel' }))
+  await user.selectOptions(screen.getByRole('combobox', { name: 'Prepared region' }), 'Sahel')
   await user.click(screen.getByRole('button', { name: 'Use this region' }))
   await user.click(screen.getByRole('button', { name: 'Change' }))
   await expectScreen('Gather the clues')
@@ -118,7 +124,7 @@ test('a failed series load offers a way back to the scene, and a second try work
   const user = userEvent.setup()
   render(<App />)
   const toEvidence = async () => {
-    await user.click(screen.getByRole('radio', { name: 'Sahel' }))
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Prepared region' }), 'Sahel')
     await user.click(screen.getByRole('button', { name: 'Use this region' }))
     await user.click(screen.getByRole('radio', { name: 'rising' }))
     await user.click(screen.getByRole('button', { name: 'Yes, show me the evidence' }))
@@ -130,4 +136,30 @@ test('a failed series load offers a way back to the scene, and a second try work
   await expectScreen('Pick the scene')
   await toEvidence()
   expect(await screen.findByRole('button', { name: 'See the verdict' })).toBeInTheDocument()
+})
+
+test('the rail and Previous/Next move between steps without losing answers', async () => {
+  const user = userEvent.setup()
+  render(<App />)
+  await user.click(await screen.findByRole('button', { name: 'air temperature' }))
+  await user.selectOptions(screen.getByRole('combobox', { name: 'Prepared region' }), 'Sahel')
+  await user.click(screen.getByRole('button', { name: 'Use this region' }))
+  await user.click(screen.getByRole('radio', { name: 'falling' }))
+  await user.click(screen.getByRole('button', { name: 'Yes, show me the evidence' }))
+  await expectScreen('The evidence')
+
+  const rail = screen.getByRole('complementary', { name: 'Case progress' })
+  await user.click(within(rail).getByRole('button', { name: /Scene/ }))
+  await expectScreen('Pick the scene')
+  expect(screen.getByRole('combobox', { name: 'Prepared region' })).toHaveValue('sahel')
+
+  const steps = screen.getByRole('navigation', { name: 'Steps' })
+  await user.click(within(steps).getByRole('button', { name: 'Next' }))
+  await expectScreen('Case brief')
+  expect(screen.getByRole('radio', { name: 'falling' })).toBeChecked()
+  await user.click(within(steps).getByRole('button', { name: 'Next' }))
+  await expectScreen('The evidence')
+  expect(within(steps).getByRole('button', { name: 'Next' })).toBeEnabled()
+  await user.click(within(steps).getByRole('button', { name: 'Previous' }))
+  await expectScreen('Case brief')
 })

@@ -31,3 +31,11 @@ export function nextQuestion(suspects: Variable[], askedIds: string[], questions
   }
   return best;
 }
+
+// The question as shown: "{options}" becomes the live choices in plain English ("the air or the land"),
+// so the text never names a choice that isn't on screen.
+export function questionText(question: Question, options: Question["options"]): string {
+  const words = options.map((o) => o.label.charAt(0).toLowerCase() + o.label.slice(1));
+  const list = words.length < 2 ? words.join("") : `${words.slice(0, -1).join(", ")} or ${words[words.length - 1]}`;
+  return question.text.replace("{options}", list);
+}
