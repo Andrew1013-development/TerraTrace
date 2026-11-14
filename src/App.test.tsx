@@ -1,7 +1,8 @@
 import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import App from './App'
-import { sampleResult, sampleSeries } from './fixtures'
+import { loadCatalog } from './data'
+import { sampleCatalog, sampleResult } from './fixtures'
 
 vi.mock('./stats', () => ({
   analyze: vi.fn(() => sampleResult),
@@ -9,7 +10,36 @@ vi.mock('./stats', () => ({
   deseasonalize: vi.fn(() => []),
 }))
 vi.mock('./ui/Chart', () => ({ Chart: () => <figure aria-label="chart" /> }))
-vi.mock('./data', () => ({ getSeries: vi.fn(() => Promise.resolve(sampleSeries)) }))
+vi.mock('./data', async () => {
+  const f = await import('./fixtures')
+  return {
+    getSeries: vi.fn(() => Promise.resolve(f.sampleSeries)),
+    loadCatalog: vi.fn(() => Promise.resolve(f.sampleCatalog)),
+    loadRegions: vi.fn(() => Promise.resolve(f.sampleRegions)),
+    demoCases: [{ id: 'demo', title: 'Synthetic demo', variableId: 'T2M', place: { kind: 'region', id: 'sahel' } }],
+  }
+})
+
+beforeEach(() => vi.mocked(loadCatalog).mockImplementation(() => Promise.resolve(sampleCatalog)))
+
+test('shows a loading message, then the clues with the catalog from loadCatalog', async () => {
+  render(<App />)
+  expect(screen.getByRole('status')).toHaveTextContent('Loading the case files')
+  expect(await screen.findByRole('heading', { level: 1, name: 'Gather the clues' })).toBeInTheDocument()
+  expect(loadCatalog).toHaveBeenCalled()
+})
+
+test('a failed load shows the DataError message, and Try again retries', async () => {
+  const error = Object.assign(new Error("We couldn't reach NASA's data service. Check your connection, or try a prepared region."), {
+    kind: 'network' as const,
+  })
+  vi.mocked(loadCatalog).mockRejectedValueOnce(error)
+  const user = userEvent.setup()
+  render(<App />)
+  expect(await screen.findByRole('alert')).toHaveTextContent("We couldn't reach NASA's data service.")
+  await user.click(screen.getByRole('button', { name: 'Try again' }))
+  expect(await screen.findByRole('heading', { level: 1, name: 'Gather the clues' })).toBeInTheDocument()
+})
 
 const stepFor: Record<string, string> = {
   'Gather the clues': 'Clues',
@@ -34,7 +64,7 @@ test('walks clues, scene, brief, evidence, verdict and back to clues', async () 
   render(<App />)
 
   await expectScreen('Gather the clues')
-  await user.click(screen.getByRole('button', { name: 'Continue' }))
+  await user.click(await screen.findByRole('button', { name: 'Continue' }))
 
   await expectScreen('Pick the scene')
   await user.click(screen.getByRole('button', { name: 'Use this region' }))
@@ -55,7 +85,7 @@ test('walks clues, scene, brief, evidence, verdict and back to clues', async () 
 test('Change on the brief goes back to the clues', async () => {
   const user = userEvent.setup()
   render(<App />)
-  await user.click(screen.getByRole('button', { name: 'Continue' }))
+  await user.click(await screen.findByRole('button', { name: 'Continue' }))
   await user.click(screen.getByRole('button', { name: 'Use this region' }))
   await user.click(screen.getByRole('button', { name: 'Change' }))
   await expectScreen('Gather the clues')
@@ -64,6 +94,6 @@ test('Change on the brief goes back to the clues', async () => {
 test('a solved case opens straight at the brief', async () => {
   const user = userEvent.setup()
   render(<App />)
-  await user.click(screen.getByRole('button', { name: 'Open a solved case' }))
+  await user.click(await screen.findByRole('button', { name: 'Open a solved case' }))
   await expectScreen('Case brief')
 })

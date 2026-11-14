@@ -1,7 +1,6 @@
-import { useEffect, useReducer } from 'react'
-import { getSeries, type DataError } from './data'
-import { sampleCatalog, sampleRegions } from './fixtures'
-import type { DemoCase, Hunch, Place, Series, Variable } from './types'
+import { useEffect, useReducer, useState } from 'react'
+import { demoCases, getSeries, loadCatalog, loadRegions, type DataError } from './data'
+import type { Hunch, Place, Region, Series, Variable } from './types'
 import { CaseBrief } from './ui/CaseBrief'
 import { Clues } from './ui/Clues'
 import { Evidence } from './ui/Evidence'
@@ -71,15 +70,10 @@ export function caseReducer(state: CaseState, event: CaseEvent): CaseState {
   }
 }
 
-// shortcut: fixtures stand in for loadCatalog, loadRegions and demoCases until Tasks A3 and A7 land.
-const catalog = sampleCatalog
-const regions = sampleRegions
-const demoCases: DemoCase[] = [
-  { id: 'synthetic-demo', title: 'Synthetic demo case', variableId: catalog[0].id, place: { kind: 'region', id: regions[0].id } },
-]
+type CaseFiles = { catalog: Variable[]; regions: Region[] }
 
 // shortcut: stands in for placeName from src/place until Task B4 lands; delete then.
-function tempPlaceName(place: Place | undefined): string | undefined {
+function tempPlaceName(place: Place | undefined, regions: Region[]): string | undefined {
   if (!place) return undefined
   if (place.kind === 'point') return `${place.lat.toFixed(2)}, ${place.lon.toFixed(2)}`
   return regions.find((r) => r.id === place.id)?.name ?? place.id
@@ -87,8 +81,21 @@ function tempPlaceName(place: Place | undefined): string | undefined {
 
 export default function App() {
   const [state, dispatch] = useReducer(caseReducer, initialState)
+  const [files, setFiles] = useState<CaseFiles | DataError>()
+  const [attempt, setAttempt] = useState(0)
   const { variable, place } = state
   const loading = state.load.status === 'loading'
+
+  useEffect(() => {
+    let live = true
+    Promise.all([loadCatalog(), loadRegions()]).then(
+      ([catalog, regions]) => live && setFiles({ catalog, regions }),
+      (error: DataError) => live && setFiles(error),
+    )
+    return () => {
+      live = false
+    }
+  }, [attempt])
 
   useEffect(() => {
     if (!loading || !variable || !place) return
@@ -98,19 +105,40 @@ export default function App() {
     )
   }, [loading, variable, place])
 
+  const regions = files && !(files instanceof Error) ? files.regions : []
+
   return (
     <Shell
       screen={state.screen}
       variable={state.variable}
-      placeName={tempPlaceName(state.place)}
+      placeName={tempPlaceName(state.place, regions)}
       hunch={state.hunch}
     >
-      <CurrentScreen state={state} dispatch={dispatch} />
+      {files === undefined && <p role="status">Loading the case files…</p>}
+      {files instanceof Error && (
+        <>
+          <p role="alert" className="error">
+            {files.message}
+          </p>
+          <button
+            type="button"
+            onClick={() => {
+              setFiles(undefined)
+              setAttempt((a) => a + 1)
+            }}
+          >
+            Try again
+          </button>
+        </>
+      )}
+      {files && !(files instanceof Error) && <CurrentScreen state={state} dispatch={dispatch} files={files} />}
     </Shell>
   )
 }
 
-function CurrentScreen({ state, dispatch }: { state: CaseState; dispatch: (e: CaseEvent) => void }) {
+type ScreenProps = { state: CaseState; dispatch: (e: CaseEvent) => void; files: CaseFiles }
+
+function CurrentScreen({ state, dispatch, files: { catalog, regions } }: ScreenProps) {
   switch (state.screen) {
     case 'clues':
       return (
@@ -132,7 +160,7 @@ function CurrentScreen({ state, dispatch }: { state: CaseState; dispatch: (e: Ca
       return (
         <CaseBrief
           variable={state.variable}
-          placeName={tempPlaceName(state.place) ?? ''}
+          placeName={tempPlaceName(state.place, regions) ?? ''}
           onConfirm={(hunch) => dispatch({ type: 'confirm', hunch })}
           onChange={() => dispatch({ type: 'change' })}
         />
