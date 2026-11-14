@@ -24,12 +24,12 @@ export function formatNumber(x: number, signed = false): string {
 
 const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
-// years (issue 46): when given, the sentence begins "From {start} to {end}, ". Stub: not used yet.
+// years (issue 46): when given, the sentence begins "From {start} to {end}, "; without it, nothing changes.
 export function getVerdict(
   result: TrendResult,
   variable: Variable,
   place: string,
-  _years?: [number, number],
+  years?: [number, number],
 ): Verdict {
   const { mkP, ci95: [lo, hi], slopePerDecade: slope } = result;
   const significant = mkP < ALPHA;
@@ -54,7 +54,9 @@ export function getVerdict(
     none: `We found no significant long-term trend in ${variable.name} in ${place}. That is a real result: it has stayed within its normal ups and downs.`,
   }[kind];
 
-  return { kind, text, caveat: CAVEAT };
+  // Variable names are lower case by contract, so lowering the first letter restores them ("Air" to "air", "We" to "we").
+  const dated = years ? `From ${years[0]} to ${years[1]}, ${text.charAt(0).toLowerCase()}${text.slice(1)}` : text;
+  return { kind, text: dated, caveat: CAVEAT };
 }
 
 export function hunchLine(hunch: Hunch, verdict: Verdict): string {
