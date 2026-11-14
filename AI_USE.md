@@ -10,4 +10,7 @@ One line per meaningful use of AI tools. No AI model runs in the app.
 | Tasks C1 and frontend design | Dev C | Claude Code | Researched dashboard references on Mobbin and the Space Apps brand guide, drafted the frontend design and plan, and wrote the app reducer, placeholder screens, dashboard shell, brand styles, primary button with star burst, and their tests | Dev C |
 | Task A2 | Dev A | Claude Code | Captured the POWER sample, wrote the `getSeries` tests and implemented `getSeries` and `DataError` | Dev A |
 | Task A3 | Dev A | Claude Code | Wrote the loader tests and loaders, and drafted the starter catalog definitions (checked against live POWER calls) and regions | Dev A |
+| Task A4 | Dev A | Claude Code | Wrote the clue engine tests, the engine and the first draft of the four questions | Dev A |
+| Task A5 | Dev A | Claude Code | Wrote the precompute tests and script, and drafted the 12 region boxes | Dev A |
+| Task B2 | Dev B | Claude Code | Wrote scripts/make_stats_fixtures.py, the statistics stub, tests and implementation in src/stats/ from ARCHITECTURE.md section 7.1 | Dev B, then Dev C line by line |
 | Task B4 | Dev B | Claude Code | Wrote the place helpers stub, tests and implementation in src/place/ from ARCHITECTURE.md sections 4.4 and 8 | Dev B |
