@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { loadCountries, type Countries } from '../data'
-import { countryAt, leadsFor, listName, parsePoint, regionAt } from '../place'
+import { countryAt, leadsFor, listName, parsePoint, placeName, regionAt } from '../place'
 import type { Lead, Place, Region, Variable } from '../types'
 import { GlobeIcon, PinIcon } from './icons'
 import { ScreenHeading } from './ScreenHeading'
@@ -16,15 +16,20 @@ type PlacePickerProps = {
 
 const COORD_ERROR = 'Enter a latitude from -90 to 90 and a longitude from -180 to 180.'
 
-// A typed point outside every region is named by its country, never by its numbers.
-const spotName = (country: string | undefined) => (country ? `one spot in ${country}` : 'one spot at sea')
+// A typed point outside every region is named by its country. Without the country file (still loading, or failed)
+// there is no name, so placeName shows the coordinates; "at sea" is said only when the file has no country there.
+function spotName(lat: number, lon: number, countries: Countries | null | undefined): string | undefined {
+  if (!countries) return undefined
+  const country = countryAt(lat, lon, countries)
+  return country ? `one spot in ${country}` : 'one spot at sea'
+}
 
 export function PlacePicker({ variable, regions, leads, place, onPick }: PlacePickerProps) {
   const [regionId, setRegionId] = useState(place?.kind === 'region' ? place.id : '')
   const [lat, setLat] = useState(place?.kind === 'point' ? String(place.lat) : '')
   const [lon, setLon] = useState(place?.kind === 'point' ? String(place.lon) : '')
   const [invalid, setInvalid] = useState(false)
-  const [countries, setCountries] = useState<Countries>()
+  const [countries, setCountries] = useState<Countries | null>() // null: the file failed to load
   // The map follows whichever the user touched last: the region list, or the typed point.
   const [mode, setMode] = useState<'region' | 'point'>(place?.kind === 'point' ? 'point' : 'region')
 
@@ -38,16 +43,16 @@ export function PlacePicker({ variable, regions, leads, place, onPick }: PlacePi
 
   // Country names are only needed for a point outside every region; load them then (cached by src/data).
   useEffect(() => {
-    if (mode === 'point' && point && !pointRegion && !countries) loadCountries().then(setCountries, () => {})
+    if (mode === 'point' && point && !pointRegion && countries === undefined) loadCountries().then(setCountries, () => setCountries(null))
   }, [mode, point, pointRegion, countries])
 
   const caption =
     mode === 'point' && point
       ? pointRegion
         ? `This point is inside ${pointRegion.name}, so the case uses the data for ${pointRegion.name}.`
-        : `This point is outside the prepared regions, so the case uses live data for ${spotName(
-            countries && countryAt(point.lat, point.lon, countries),
-          )}.`
+        : `This point is outside the prepared regions, so the case uses live data for ${
+            spotName(point.lat, point.lon, countries) ?? placeName(point, regions)
+          }.`
       : listRegion
         ? `Highlighted: ${listRegion.name}. The case averages 9 sampled points across this region.`
         : 'Pick a region, or type coordinates, to see it on the map.'
@@ -58,8 +63,9 @@ export function PlacePicker({ variable, regions, leads, place, onPick }: PlacePi
     if (!p || p.kind !== 'point') return setInvalid(true)
     const inside = regionAt(p.lat, p.lon, regions)
     if (inside) return onPick({ kind: 'region', id: inside.id })
-    const list = countries ?? (await loadCountries().catch(() => undefined))
-    onPick({ ...p, name: spotName(list && countryAt(p.lat, p.lon, list)) })
+    // A failed load is tried once more here, in case the connection is back.
+    const name = spotName(p.lat, p.lon, countries || (await loadCountries().catch(() => null)))
+    onPick(name ? { ...p, name } : p)
   }
 
   return (

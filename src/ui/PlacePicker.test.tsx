@@ -1,5 +1,6 @@
 import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { loadCountries } from '../data'
 import { sampleCatalog, sampleLeads, sampleRegions } from '../fixtures'
 import type { Place, Variable } from '../types'
 import { PlacePicker } from './PlacePicker'
@@ -139,4 +140,16 @@ test('a place already chosen comes back selected', () => {
   renderPicker(precipitation, { kind: 'region', id: 'mekong-delta' })
   expect(region()).toHaveValue('mekong-delta')
   expect(screen.getByRole('button', { name: 'Use this region' })).toBeEnabled()
+})
+
+test('when the country file fails, a point is never called "at sea": it keeps its coordinates (audit 3)', async () => {
+  vi.mocked(loadCountries).mockRejectedValue(new Error('network'))
+  const { onPick, user } = renderPicker()
+  await user.type(latitude(), '48.86')
+  await user.type(longitude(), '2.35')
+  expect(screen.queryByText(/at sea/)).toBeNull()
+  expect(screen.getByText(/live data for the area around 48.86, 2.35/)).toBeInTheDocument()
+  await user.click(screen.getByRole('button', { name: 'Use these coordinates' }))
+  await waitFor(() => expect(onPick).toHaveBeenCalledWith({ kind: 'point', lat: 48.86, lon: 2.35 }))
+  vi.mocked(loadCountries).mockReset()
 })
