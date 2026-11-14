@@ -1,0 +1,307 @@
+/* Case File styles. Colours from the NASA Space Apps Brand Guidelines (updated June 25, 2026). */
+
+@font-face {
+  font-family: "Fira Sans";
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+  src: url("./fonts/FiraSans-Bold.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Overpass";
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+  src: url("./fonts/Overpass-Regular.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Overpass";
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+  src: url("./fonts/Overpass-Bold.woff2") format("woff2");
+}
+
+:root {
+  /* Brand colours */
+  --deep-blue: #07173F;
+  --electric-blue: #0042A6;
+  --neon-blue: #0960E1;
+  --yellow: #EAFE07;
+  --red: #E43700;
+  --red-hover: #E43700; /* white label on it is 4.37:1, so primary labels are 19px bold (large text) */
+  --orange: #F57C00; /* not a brand colour: half of the star burst */
+
+  /* Neutrals */
+  --ink: #151622;
+  --muted: #4A5170;
+  --tile: #EEF2FB;
+  --line: #C5CBE0;
+  --rail-text: #C9D2F5;
+  --rail-dim: #9AA7E0;
+  --white: #FFFFFF;
+
+  /* Type */
+  --font-head: "Fira Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-body: "Overpass", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --text-sm: 0.8125rem;
+  --text-md: 1rem;
+  --text-lg: 1.25rem;
+  --text-xl: 1.75rem;
+  --text-button: 1.1875rem; /* 19px: large text threshold for bold */
+
+  /* Space and shape */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+  --radius: 8px;
+  --radius-card: 12px;
+
+  /* Motion */
+  --ease: cubic-bezier(.4, 0, .2, 1);
+  --fast: 140ms;
+  --snap: 160ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    transition: none !important;
+    animation: none !important;
+  }
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--white);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: var(--text-md);
+  line-height: 1.5;
+}
+
+h1, h2, h3 {
+  font-family: var(--font-head);
+  font-weight: 700;
+  line-height: 1.2;
+  margin: 0 0 var(--space-4);
+}
+
+h1 { font-size: var(--text-xl); }
+h2 { font-size: var(--text-lg); }
+
+a {
+  color: var(--electric-blue);
+}
+
+:focus-visible {
+  outline: 3px solid var(--neon-blue);
+  outline-offset: 2px;
+}
+/* Headings get focus only so screen readers announce a new screen; they are not controls. */
+h1[tabindex="-1"]:focus { outline: none; }
+
+/* Hover and current-step underline: a 2px line that slides in from the left. */
+.underline {
+  position: relative;
+  display: inline-block;
+}
+.underline::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -3px;
+  height: 2px;
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform var(--snap) var(--ease);
+}
+.underline-yellow::after { background: var(--yellow); }
+.underline-red::after { background: var(--red); }
+
+/* Buttons. Primary labels are 19px bold: white on the Rocket Red hover is 4.37:1, so they must be large text. */
+button {
+  font: inherit;
+  min-height: 44px;
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius);
+  cursor: pointer;
+  background: var(--white);
+  color: var(--electric-blue);
+  border: 2px solid var(--electric-blue);
+}
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-family: var(--font-head);
+  font-weight: 700;
+  font-size: var(--text-button);
+  background: var(--neon-blue);
+  color: var(--white);
+  border-color: var(--neon-blue);
+  transition: background-color var(--fast) var(--ease), border-color var(--fast) var(--ease);
+}
+.btn-primary:hover:not(:disabled) {
+  background: var(--red-hover);
+  border-color: var(--red-hover);
+}
+.btn-primary:disabled {
+  cursor: not-allowed;
+  background: var(--tile);
+  color: var(--muted);
+  border-color: var(--line);
+}
+
+.star {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 1000;
+  line-height: 1;
+  pointer-events: none;
+  will-change: transform, opacity;
+}
+
+/* Shell: rail beside the main panel on wide screens, a top strip on narrow ones. */
+.shell {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.rail {
+  position: relative;
+  isolation: isolate;
+  background: var(--deep-blue);
+  color: var(--white);
+  padding: var(--space-3) var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  overflow-wrap: anywhere;
+}
+.rail::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: url("../ui/brand/orbits.png") center / cover no-repeat;
+  opacity: 0.25;
+  mix-blend-mode: screen;
+  pointer-events: none;
+}
+.rail :focus-visible { outline-color: var(--yellow); }
+
+.rail-brand {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+.rail-brand img { flex: none; }
+.rail-name {
+  font-family: var(--font-head);
+  font-weight: 700;
+  font-size: var(--text-lg);
+}
+.rail-strip-step {
+  margin-left: auto;
+  font-size: var(--text-sm);
+  color: var(--rail-text);
+}
+
+.rail-details summary {
+  cursor: pointer;
+  color: var(--rail-text);
+  font-size: var(--text-sm);
+  padding: var(--space-2) 0;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+.rail-details summary::before { content: "▸"; }
+.rail-details[open] summary::before { content: "▾"; }
+
+.rail-steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.rail-step {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding-left: var(--space-3);
+  border-left: 3px solid transparent;
+}
+.rail-step-label {
+  font-size: var(--text-sm);
+  color: var(--rail-text);
+}
+.rail-step.is-todo .rail-step-label,
+.rail-step.is-todo .rail-step-value { color: var(--rail-dim); }
+.rail-step.is-current { border-left-color: var(--yellow); }
+.rail-step.is-current .rail-step-label { color: var(--yellow); font-weight: 700; }
+.rail-step.is-current .underline::after,
+.rail-step.is-done:hover .underline::after { transform: scaleX(1); }
+
+.built-for {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-4);
+  background: var(--deep-blue);
+  font-size: var(--text-sm);
+  color: var(--rail-text);
+}
+.built-for img {
+  width: 150px;
+  max-width: 100%;
+  height: auto;
+}
+
+.panel {
+  flex: 1;
+  min-width: 0;
+  padding: var(--space-5) var(--space-4);
+}
+.context {
+  margin: 0 0 var(--space-1);
+  font-size: var(--text-sm);
+  color: var(--muted);
+}
+
+@media (min-width: 768px) {
+  .shell {
+    display: grid;
+    grid-template-columns: 240px minmax(0, 1fr);
+    grid-template-rows: 1fr auto;
+    grid-template-areas: "rail panel" "foot panel";
+  }
+  .rail {
+    grid-area: rail;
+    padding: var(--space-5) var(--space-4);
+    gap: var(--space-5);
+  }
+  .panel { grid-area: panel; padding: var(--space-6); }
+  .built-for {
+    grid-area: foot;
+    border-top: 1px solid rgba(201, 210, 245, 0.3);
+  }
+  .rail-strip-step,
+  .rail-details summary { display: none; }
+}
