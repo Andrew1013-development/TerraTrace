@@ -76,6 +76,9 @@ test("listName starts a name with a capital and changes nothing else", async () 
 
 // Scene map (Dev C, with the user's go-ahead): which region or country a typed point is in.
 import { countryAt, regionAt } from "./index";
+import type { Region } from "../types";
+import regionsJson from "../../public/data/regions.json";
+import shapesJson from "../../public/data/region-shapes.json";
 
 describe("regionAt", () => {
   test("finds the prepared region whose box holds the point", () => {
@@ -88,6 +91,33 @@ describe("regionAt", () => {
   test("prefers the smallest box when boxes overlap", () => {
     const big = { id: "big", name: "Big", bbox: [0, 100, 20, 120] as [number, number, number, number] };
     expect(regionAt(10, 105.5, [big, ...sampleRegions])?.id).toBe("mekong-delta");
+  });
+});
+
+// Issue 52, A1: the globe draws each region's real outline, so the point test uses that outline, not the box.
+describe("regionAt with the real region shapes", () => {
+  const regions = regionsJson as unknown as Region[];
+  const shapes = shapesJson as unknown as Record<string, { coordinates: number[][][][] }>;
+  const only = (...ids: string[]) => regions.filter((r) => ids.includes(r.id));
+
+  test("finds a point inside a shape but outside its box (Egypt, in the Sahara outline)", () => {
+    expect(regionAt(27, 30, regions)).toBeUndefined();
+    expect(regionAt(27, 30, regions, shapes)?.id).toBe("sahara");
+  });
+  test("does not find a point inside the box but outside the shape, when a shape is given", () => {
+    expect(regionAt(30, -10, regions)?.id).toBe("sahara");
+    expect(regionAt(30, -10, regions, shapes)).toBeUndefined();
+  });
+  test("a region with no entry in shapes still uses its box", () => {
+    expect(regionAt(30, -10, regions, {})?.id).toBe("sahara");
+    expect(regionAt(10, 105.5, sampleRegions, shapes)?.id).toBe("mekong-delta");
+    const box = { id: "box-only", name: "Box only", bbox: [27, 29, 28, 31] as [number, number, number, number] };
+    expect(regionAt(27.5, 30, [box], shapes)?.id).toBe("box-only");
+  });
+  test("where the Sahara and Sahel shapes overlap, the smaller box (the Sahel) wins", () => {
+    expect(regionAt(14, 15, only("sahara"), shapes)?.id).toBe("sahara");
+    expect(regionAt(14, 15, only("sahel"), shapes)?.id).toBe("sahel");
+    expect(regionAt(14, 15, only("sahara", "sahel"), shapes)?.id).toBe("sahel");
   });
 });
 

@@ -35,12 +35,21 @@ export function leadsFor(leads: Lead[], regionId: string, variableId: string): L
   return leads.filter((l) => l.regionId === regionId && l.variableId === variableId);
 }
 
-// The prepared region whose box holds a point (the smallest, if boxes overlap), for the Scene map.
-export function regionAt(lat: number, lon: number, regions: Region[]): Region | undefined {
+// The prepared region that holds a point (the smallest box, if several do), for the Scene map. A region with an
+// entry in shapes (region-shapes.json) is tested against its polygons' outer rings, since the globe draws that
+// outline; the file has no holes. A region without one, or every region when shapes is omitted, uses its box.
+export function regionAt(
+  lat: number,
+  lon: number,
+  regions: Region[],
+  shapes?: Record<string, { coordinates: number[][][][] }>,
+): Region | undefined {
   const area = (r: Region) => (r.bbox[2] - r.bbox[0]) * (r.bbox[3] - r.bbox[1]);
-  return regions
-    .filter(({ bbox: [s, w, n, e] }) => lat >= s && lat <= n && lon >= w && lon <= e)
-    .sort((a, b) => area(a) - area(b))[0];
+  const holds = ({ id, bbox: [s, w, n, e] }: Region) => {
+    const shape = shapes?.[id];
+    return shape ? shape.coordinates.some(([outer]) => inRing(lon, lat, outer)) : lat >= s && lat <= n && lon >= w && lon <= e;
+  };
+  return regions.filter(holds).sort((a, b) => area(a) - area(b))[0];
 }
 
 type Ring = number[][];

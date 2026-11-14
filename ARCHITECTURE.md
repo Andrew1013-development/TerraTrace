@@ -148,8 +148,15 @@ export function parsePoint(lat: string, lon: string): Place | null;
 export function placeName(place: Place, regions: Region[]): string;
 export function leadsFor(leads: Lead[], regionId: string, variableId: string): Lead[];
 export function listName(name: string): string;
-// The region whose box contains the point (the smallest, if boxes overlap); a typed point inside one uses that region's data.
-export function regionAt(lat: number, lon: number, regions: Region[]): Region | undefined;
+// The region that contains the point (the smallest box, if several do); a typed point inside one uses that region's data.
+// shapes: the content of region-shapes.json (RegionShapes in src/data). A region with a shape is hit when the point is
+// inside any of its polygons' outer rings; a region without one, or every region when shapes is omitted, is hit by its box.
+export function regionAt(
+  lat: number,
+  lon: number,
+  regions: Region[],
+  shapes?: Record<string, { coordinates: number[][][][] }>,
+): Region | undefined;
 // The country containing the point, or undefined at sea; names a point outside every region.
 export function countryAt(lat: number, lon: number, countries: Countries): string | undefined;
 ```
