@@ -73,3 +73,9 @@ test("every variable can end as the only suspect, or in a final list of at most 
 test("some answer path leads to PRECTOTCORR", () => {
   expect(finalLists(catalog).some((l) => l.some((v) => v.id === "PRECTOTCORR"))).toBe(true);
 });
+
+test("TS is named for land and sea, as its definition says (#23)", () => {
+  const ts = catalog.find((v) => v.id === "TS")!;
+  expect(ts.definition).toMatch(/land or sea/);
+  expect(ts.name).toBe("surface temperature");
+});
