@@ -104,6 +104,25 @@ test('Start over appears after an answer and brings back all suspects', async ()
   expect(question()).toHaveAccessibleName('What would you notice?')
 })
 
+const focused = () =>
+  document.activeElement === document.body ? 'page body' : document.activeElement?.textContent?.trim()
+
+test('focus moves to what comes next after each answer, never to the page body', async () => {
+  const { user } = renderClues()
+  screen.getByRole('button', { name: 'Hotter or colder' }).focus()
+  await user.keyboard('{Enter}')
+  expect(focused()).toBe('Is it about the air or the land?')
+  await user.click(screen.getByRole('button', { name: 'The air' }))
+  expect(focused()).toBe('air temperature')
+  await user.click(screen.getByRole('button', { name: 'Start over' }))
+  expect(focused()).toBe('What would you notice?')
+})
+
+test('focus stays on the heading when the screen first appears', () => {
+  renderClues()
+  expect(focused()).toBe('Gather the clues')
+})
+
 test('each solved case button calls onDemo with that case', async () => {
   const { user, onDemo } = renderClues()
   const solved = screen.getByRole('region', { name: 'Open a solved case' })

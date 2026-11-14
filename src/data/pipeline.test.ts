@@ -100,7 +100,8 @@ describe("4. Evidence: every catalog variable in every region", () => {
         const at = `${v.id}/${r.id}`;
         const s = await data.getSeries(v, { kind: "region", id: r.id });
         expect([s.variableId, s.placeId, s.unit], at).toEqual([v.id, r.id, v.unit]);
-        expect(s.source, at).toContain("sampled regional mean of 9 points");
+        // The chart shows this line, so it names the catalog's product and version (issue 22).
+        expect(s.source, at).toBe(`${v.source}, sampled regional mean of 9 points`);
         expect(s.dates.length, at).toBe(s.values.length);
         expect(s.dates.every((d) => /^\d{4}-(0[1-9]|1[0-2])$/.test(d)), at).toBe(true);
         expect(s.dates, at).toEqual([...s.dates].sort());

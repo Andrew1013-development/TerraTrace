@@ -5,7 +5,8 @@ import pytest
 import precompute
 from precompute import region_series, sample_points, weighted_mean
 
-T2M = {"id": "T2M", "powerParameter": "T2M", "unit": "°C", "startYear": 2020}
+T2M = {"id": "T2M", "powerParameter": "T2M", "unit": "°C", "startYear": 2020,
+       "source": "NASA POWER monthly (MERRA-2), API v2.10.0"}
 REGION = {"id": "test-box", "name": "Test box", "bbox": [0, 10, 6, 16]}
 
 
@@ -55,7 +56,8 @@ def test_region_series_has_equal_dates_and_values_lengths():
 
 def test_source_text_says_sampled_regional_mean_of_9_points():
     s = region_series(T2M, REGION, lambda lat, lon, v: power_response({"202001": 1.0}))
-    assert s["source"] == "NASA POWER monthly, sampled regional mean of 9 points"
+    # Names the product and version from the catalog (issue 22), plus the card A5 wording.
+    assert s["source"] == "NASA POWER monthly (MERRA-2), API v2.10.0, sampled regional mean of 9 points"
 
 
 def test_region_series_rounds_to_4_decimals_and_writes_valid_json():
