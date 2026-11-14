@@ -58,7 +58,7 @@ test("loadLand fetches data/land.json under BASE_URL, once", async () => {
   await expect(data.loadLand()).resolves.toEqual(land);
   await data.loadLand();
   expect(fetchMock).toHaveBeenCalledTimes(1);
-  expect(fetchMock).toHaveBeenCalledWith(`${import.meta.env.BASE_URL}data/land.json`);
+  expect(fetchMock).toHaveBeenCalledWith(`${import.meta.env.BASE_URL}data/land.json`, expect.anything());
 });
 
 test("the committed land.json is a FeatureCollection of polygons", async () => {
@@ -76,7 +76,7 @@ test.each([
   await data[name]();
   await data[name]();
   expect(fetchMock).toHaveBeenCalledTimes(1);
-  expect(fetchMock).toHaveBeenCalledWith(`${import.meta.env.BASE_URL}data/${file}`);
+  expect(fetchMock).toHaveBeenCalledWith(`${import.meta.env.BASE_URL}data/${file}`, expect.anything());
 });
 
 test("the committed region-shapes.json has a shape for every region", async () => {
