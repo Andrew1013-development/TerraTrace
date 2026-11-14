@@ -22,6 +22,9 @@ export function formatNumber(x: number, signed = false): string {
   return (x < 0 ? "\u2212" : signed ? "+" : "") + digits;
 }
 
+// A rate in "%" is a change in percentage points; "0.76 % per decade" reads as a relative change.
+export const rateUnit = (unit: string) => (unit === "%" ? "percentage points" : unit);
+
 const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
 // years (issue 46): when given, the sentence begins "From {start} to {end}, "; without it, nothing changes.
@@ -43,14 +46,17 @@ export function getVerdict(
 
   const Name = capitalize(variable.name);
   const shown = formatNumber(Math.abs(slope));
-  const rate = `${shown} ${variable.unit}`;
+  const unit = rateUnit(variable.unit);
+  // Below the formatNumber floor a rise or fall would read "by about 0": give the floor as a bound instead.
+  const by = shown === "0" ? `by less than 0.0000000001 ${unit}` : `by about ${shown} ${unit}`;
   const text = {
-    rise: `${Name} in ${place} has risen by about ${rate} per decade, and the evidence is strong.`,
-    fall: `${Name} in ${place} has fallen by about ${rate} per decade, and the evidence is strong.`,
+    rise: `${Name} in ${place} has risen ${by} per decade, and the evidence is strong.`,
+    fall: `${Name} in ${place} has fallen ${by} per decade, and the evidence is strong.`,
     // A rate that rounds to 0 would read "by about 0", which contradicts "may be changing" (D1).
+    // Otherwise the sentence prints the rate without its sign, so it names the direction in words.
     mixed: shown === "0"
       ? `${Name} in ${place} may be changing, but our two checks disagree. Treat this as uncertain.`
-      : `${Name} in ${place} may be changing, by about ${rate} per decade, but our two checks disagree. Treat this as uncertain.`,
+      : `${Name} in ${place} may be ${slope > 0 ? "rising" : "falling"}, ${by} per decade, but our two checks disagree. Treat this as uncertain.`,
     none: `We found no significant long-term trend in ${variable.name} in ${place}. That is a real result: it has stayed within its normal ups and downs.`,
   }[kind];
 

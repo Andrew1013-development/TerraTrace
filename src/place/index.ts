@@ -27,6 +27,9 @@ export function placeName(place: Place, regions: Region[]): string {
   return regions.find((r) => r.id === place.id)?.name ?? place.id;
 }
 
+// Region names are written to follow "in" ("the Sahel"); in a list they start with a capital.
+export const listName = (name: string) => name.charAt(0).toUpperCase() + name.slice(1);
+
 export function leadsFor(leads: Lead[], regionId: string, variableId: string): Lead[] {
   return leads.filter((l) => l.regionId === regionId && l.variableId === variableId);
 }

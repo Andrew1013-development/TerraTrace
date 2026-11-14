@@ -51,3 +51,15 @@ test("an empty leads.json is valid", async () => {
   fetchMock.mockResolvedValue(json([]));
   await expect(data.loadLeads()).resolves.toEqual([]);
 });
+
+// Back-end report BR-01, related gap: an HTTP 200 body that is not an array breaks the array contract.
+test.each(loaders)("%s: a body that is not an array throws DataError kind unavailable, and is retried", async (name, _file, body) => {
+  for (const bad of [null, {}, "text", 5]) {
+    fetchMock.mockResolvedValueOnce(json(bad));
+    const err = await data[name]().catch((e) => e);
+    expect(err, JSON.stringify(bad)).toBeInstanceOf(data.DataError);
+    expect(err.kind).toBe("unavailable");
+  }
+  fetchMock.mockResolvedValueOnce(json(body));
+  await expect(data[name]()).resolves.toEqual(body);
+});

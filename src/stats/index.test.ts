@@ -217,6 +217,18 @@ describe("custom period (issue 46)", () => {
     expect(validPeriod(withNull, 1990, 2025)).toBe(true); // a gap inside the period is allowed
   });
 
+  test("validPeriod refuses a period whose slice has fewer than 120 valued months (custom-period D1)", () => {
+    const gap = full.dates.indexOf("2020-06");
+    const withGap = { ...full, values: full.values.map((v, i) => (i === gap ? null : v)) };
+    expect(validPeriod(withGap, 2016, 2025)).toBe(false); // 10 years, but only 119 valued months
+    expect(analyze(slicePeriod(withGap, 2016, 2025), true)).toBeNull();
+    expect(validPeriod(withGap, 2015, 2025)).toBe(true); // 11 years: 131 valued months
+    // Whatever validPeriod accepts, analyze can give a verdict for.
+    for (let start = 1981; start <= 2016; start++) {
+      if (validPeriod(withGap, start, 2025)) expect(analyze(slicePeriod(withGap, start, 2025), false), `${start}`).not.toBeNull();
+    }
+  });
+
   test("slicePeriod keeps January of start to December of end, and nothing else changes", () => {
     const before = structuredClone(full);
     const s = slicePeriod(full, 1995, 2004);

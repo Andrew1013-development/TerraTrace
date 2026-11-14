@@ -115,9 +115,9 @@ test('rise beside fall shows the opposite-directions line', async () => {
   vi.mocked(analyze).mockImplementation((s) => (s.placeId === 'arctic-canada' ? FALL : sampleResult))
   vi.mocked(getSeries).mockResolvedValue(arcticSeries)
   renderVerdict()
-  expect(screen.queryByText('These two regions are moving in opposite directions.')).toBeNull()
+  expect(screen.queryByText('These two places are moving in opposite directions.')).toBeNull()
   await userEvent.selectOptions(compare(), 'Arctic Canada')
-  expect(await screen.findByText('These two regions are moving in opposite directions.')).toBeInTheDocument()
+  expect(await screen.findByText('These two places are moving in opposite directions.')).toBeInTheDocument()
 })
 
 test('rise beside rise shows no opposite-directions line', async () => {
@@ -125,7 +125,7 @@ test('rise beside rise shows no opposite-directions line', async () => {
   renderVerdict()
   await userEvent.selectOptions(compare(), 'Arctic Canada')
   await screen.findByText(/in Arctic Canada/)
-  expect(screen.queryByText('These two regions are moving in opposite directions.')).toBeNull()
+  expect(screen.queryByText('These two places are moving in opposite directions.')).toBeNull()
 })
 
 test('an error on the second region shows its message and keeps the first card', async () => {
@@ -135,7 +135,8 @@ test('an error on the second region shows its message and keeps the first card',
   vi.mocked(getSeries).mockRejectedValue(error)
   renderVerdict()
   await userEvent.selectOptions(compare(), 'Arctic Canada')
-  expect(await screen.findByRole('alert')).toHaveTextContent("This data isn't available for that place.")
+  // The alert names the region (integration 8).
+  expect(await screen.findByRole('alert')).toHaveTextContent("Arctic Canada: This data isn't available for that place.")
   expect(
     screen.getByText('Air temperature in Sahel has risen by about 0.24 °C per decade, and the evidence is strong.'),
   ).toBeInTheDocument()
@@ -154,4 +155,31 @@ test('a late response for a region no longer chosen is ignored', async () => {
   finishArctic(arcticSeries)
   await new Promise((r) => setTimeout(r, 0))
   expect(screen.queryByText('Source: Synthetic Arctic source')).toBeNull()
+})
+
+// Integration report, defect 8: after an error the same region can be chosen again.
+test('after an error the select is back on "Choose a region", so the same region can be retried', async () => {
+  const error = Object.assign(new Error('x'), { kind: 'network' as const })
+  vi.mocked(getSeries).mockRejectedValueOnce(error).mockResolvedValueOnce(arcticSeries)
+  renderVerdict()
+  await userEvent.selectOptions(compare(), 'Arctic Canada')
+  await screen.findByRole('alert')
+  expect(compare()).toHaveValue('')
+  await userEvent.selectOptions(compare(), 'Arctic Canada')
+  expect(await screen.findByText('Source: Synthetic Arctic source')).toBeInTheDocument()
+  expect(getSeries).toHaveBeenCalledTimes(2)
+  expect(screen.queryByRole('alert')).toBeNull()
+  expect(compare()).toHaveValue('arctic-canada')
+})
+
+// Integration report, defect 6: names written to follow "in" start with a capital in a list.
+test('the compare list starts a region name with a capital; the sentence keeps "the"', async () => {
+  const regions = [{ ...sampleRegions[0] }, { id: 'sahara', name: 'the Sahara', bbox: sampleRegions[1].bbox }]
+  vi.mocked(getSeries).mockResolvedValue({ ...sampleSeries, placeId: 'sahara' })
+  render(
+    <VerdictView variable={sampleCatalog[0]} placeName="Sahel" series={sampleSeries} deseasonalized hunch="rise" regions={regions} onRestart={vi.fn()} />,
+  )
+  expect(within(compare()).getAllByRole('option').map((o) => o.textContent)).toEqual(['Choose a region', 'The Sahara'])
+  await userEvent.selectOptions(compare(), 'The Sahara')
+  expect(await screen.findByText(/Air temperature in the Sahara has risen/)).toBeInTheDocument()
 })

@@ -149,7 +149,7 @@ export function analyze(series: Series, deseasonalized: boolean): TrendResult | 
 
 // Custom period (issue 46). Whole years only; the record is cut on the client, never refetched.
 
-const MIN_PERIOD_YEARS = 10; // with complete years, 10 years is the 120 months a verdict needs
+const MIN_PERIOD_YEARS = 10;
 
 const yearOf = (date: string) => Number(date.split("-")[0]);
 
@@ -162,10 +162,12 @@ export function selectableYears(series: Series): number[] {
   return [...valued].filter(([, months]) => months === 12).map(([y]) => y).sort((a, b) => a - b);
 }
 
-// True only when start and end are both selectable years and end - start + 1 >= 10.
+// True only when start and end are both selectable years, end - start + 1 >= 10, and the slice has
+// the 120 valued months analyze needs: a year between the two ends may have missing months.
 export function validPeriod(series: Series, start: number, end: number): boolean {
   const years = selectableYears(series);
-  return years.includes(start) && years.includes(end) && end - start + 1 >= MIN_PERIOD_YEARS;
+  return years.includes(start) && years.includes(end) && end - start + 1 >= MIN_PERIOD_YEARS &&
+    countValid(slicePeriod(series, start, end)) >= MIN_MONTHS;
 }
 
 // The months from start-01 to end-12, inclusive; every other field unchanged. Callers check validPeriod first.

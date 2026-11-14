@@ -66,3 +66,10 @@ test('a region with no leads shows no leads section', async () => {
   await user.click(screen.getByRole('radio', { name: 'Arctic Canada' }))
   expect(screen.queryByRole('region', { name: 'Leads' })).toBeNull()
 })
+
+// Integration report, defect 6.
+test('a region name written for a sentence starts with a capital in the list', () => {
+  const regions = [{ ...sampleRegions[0], name: 'the Sahel' }, sampleRegions[1]]
+  render(<PlacePicker variable={precipitation} regions={regions} leads={sampleLeads} onPick={vi.fn()} />)
+  expect(screen.getAllByRole('radio').map((r) => r.closest('label')?.textContent)).toEqual(['The Sahel', 'Arctic Canada'])
+})

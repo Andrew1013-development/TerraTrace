@@ -150,13 +150,15 @@ describe("4b. Custom period (issue 46): every catalog variable in every region",
         const s = await data.getSeries(v, { kind: "region", id: r.id });
         const years = selectableYears(s);
         expect(years[0], at).toBe(v.startYear);
-        expect(years[years.length - 1], at).toBe(2025); // the last complete year; 2026 is never offered
-        expect(validPeriod(s, years[0], years[years.length - 1]), at).toBe(true);
-        expect(validPeriod(s, 2017, 2025), `${at}: 9 years`).toBe(false);
-        const slice = slicePeriod(s, 2016, 2025);
+        // The last complete year, read from the record: a data refresh must not break this test (custom-period D3).
+        const last = years[years.length - 1];
+        expect(s.dates[s.dates.length - 1], at).toBe(`${last}-12`);
+        expect(validPeriod(s, years[0], last), at).toBe(true);
+        expect(validPeriod(s, last - 8, last), `${at}: 9 years`).toBe(false);
+        const slice = slicePeriod(s, last - 9, last);
         for (const toggle of [true, false]) {
           const t = analyze(slice, toggle);
-          expect(t, `${at} 2016-2025 toggle ${toggle}`).not.toBeNull();
+          expect(t, `${at} last 10 years, toggle ${toggle}`).not.toBeNull();
           expect(t!.n).toBe(120);
           expect([t!.mkP, t!.slopePerDecade, ...t!.ci95].every(Number.isFinite), at).toBe(true);
         }
@@ -193,13 +195,14 @@ describe("5. Verdict: every catalog variable in every region, both toggle states
   function template(kind: Verdict["kind"], v: Variable, place: string): RegExp {
     const Name = esc(v.name.charAt(0).toUpperCase() + v.name.slice(1));
     const where = `${esc(v.name)} in ${esc(place)}`;
-    const rest = `${esc(v.unit)} per decade`;
+    // A "%" rate is worded in percentage points (integration report, defect 9).
+    const rest = `${esc(v.unit === "%" ? "percentage points" : v.unit)} per decade`;
     const lead = `^${Name} in ${esc(place)}`;
     return new RegExp({
       rise: `${lead} has risen by about ${RATE} ${rest}, and the evidence is strong\\.$`,
       fall: `${lead} has fallen by about ${RATE} ${rest}, and the evidence is strong\\.$`,
       // The rate clause is left out when it rounds to 0 (D1).
-      mixed: `${lead} may be changing(?:, by about ${RATE} ${rest})?, but our two checks disagree\\. Treat this as uncertain\\.$`,
+      mixed: `${lead} may be (?:(?:rising|falling), by about ${RATE} ${rest}|changing), but our two checks disagree\\. Treat this as uncertain\\.$`,
       none: `^We found no significant long-term trend in ${where}\\. That is a real result: it has stayed within its normal ups and downs\\.$`,
     }[kind]);
   }

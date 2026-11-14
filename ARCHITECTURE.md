@@ -143,9 +143,10 @@ export function nextQuestion(suspects: Variable[], askedIds: string[], questions
 export function parsePoint(lat: string, lon: string): Place | null;
 export function placeName(place: Place, regions: Region[]): string;
 export function leadsFor(leads: Lead[], regionId: string, variableId: string): Lead[];
+export function listName(name: string): string;
 ```
 
-`placeName` gives a region's `name`, or for a point "the area around {lat}, {lon}" with 2 decimals, so it reads correctly after "in". A POWER point is a grid cell about 50 km across.
+`placeName` gives a region's `name`, or for a point "the area around {lat}, {lon}" with 2 decimals, so it reads correctly after "in". A POWER point is a grid cell about 50 km across. Region names are written to follow "in" ("the Sahel"); `listName` starts a name with a capital for lists, selects and the "Case so far" panel ("The Sahel").
 
 ### 4.5 Stats (`src/stats/index.ts`, Dev B)
 
@@ -163,7 +164,7 @@ export function validPeriod(series: Series, start: number, end: number): boolean
 export function slicePeriod(series: Series, start: number, end: number): Series;
 ```
 
-**Custom period (issue 46).** A period is whole years. `selectableYears` lists the years that can start or end one: all 12 months present with a value, so an incomplete year (2026 today) is never offered. `validPeriod` is the only home of the rule "both ends selectable, at least 10 years" (10 complete years are the 120 months a verdict needs). `slicePeriod` keeps January of the start year to December of the end year and leaves every other field unchanged; it does not validate. The record is fetched in full and cut on the client, so a period never refetches, and `analyze(slicePeriod(...), toggle)` recomputes everything on the slice, the seasonal climatology included.
+**Custom period (issue 46).** A period is whole years. `selectableYears` lists the years that can start or end one: all 12 months present with a value, so an incomplete year (2026 today) is never offered. `validPeriod` is the only home of the rule "both ends selectable, at least 10 years, and at least 120 valued months in the slice". Only the two end years must be complete; a year between them may have missing months, so the month count is checked too. Whatever `validPeriod` accepts, `analyze` can give a result for. `slicePeriod` keeps January of the start year to December of the end year and leaves every other field unchanged; it does not validate. The record is fetched in full and cut on the client, so a period never refetches, and `analyze(slicePeriod(...), toggle)` recomputes everything on the slice, the seasonal climatology included.
 
 ### 4.6 Verdict (`src/verdict/index.ts`, Dev B)
 
@@ -172,9 +173,12 @@ export function getVerdict(result: TrendResult, variable: Variable, place: strin
 export function hunchLine(hunch: Hunch, verdict: Verdict): string;
 export function oppositeDirections(a: Verdict, b: Verdict): boolean;
 export function formatNumber(x: number, signed?: boolean): string;
+export function rateUnit(unit: string): string;
 ```
 
-`formatNumber` writes a number at 2 significant figures as a plain decimal, with the true minus sign "−" for negatives and "+" for positives when `signed`. The verdict sentences and the Evidence screen both use it, so the same rate reads the same way everywhere.
+`formatNumber` writes a number at 2 significant figures as a plain decimal, with the true minus sign "−" for negatives and "+" for positives when `signed`. Below 1e-10 it writes "0": a plain decimal that small is 12 or more digits long. The verdict sentences and the Evidence screen both use it, so the same rate reads the same way everywhere.
+
+`rateUnit` gives the unit of a rate: "percentage points" for "%", otherwise the unit unchanged. A humidity rate of "0.76 % per decade" would read as a relative change. The verdict sentences and the rate and interval tiles use it; the chart axis keeps "%".
 
 ### 4.7 Fixtures (`src/fixtures/index.ts`, Dev B)
 
@@ -202,6 +206,7 @@ type CaseState = {
 | `brief` | Confirmed with a hunch | `evidence` | Store `hunch`; call `getSeries`; `load.status = "loading"` |
 | `brief` | "Change" | `clues` | Clear `variable`, `place`, `hunch` |
 | `evidence` | "See the verdict" | `verdict` | None |
+| `evidence`, load failed | "Choose another place" | `scene` | Clear `place` and `hunch`; `load.status = "idle"`; keep `variable` |
 | `verdict` | "Open a new case" | `clues` | Reset everything |
 | Any | `getSeries` fails | Same screen | `load.status = "error"` |
 
@@ -298,7 +303,7 @@ Significance level 0.05. "Excludes 0" means both ends of `ci95` are above 0, or 
 
 `mkP` of exactly 0.05 is not significant. An interval that touches 0 does not exclude it.
 
-**Wording.** `{rate}` is the absolute `slopePerDecade` from `formatNumber`. When it rounds to "0", the `mixed` sentence leaves out its rate clause: "{Name} in {place} may be changing, but our two checks disagree. Treat this as uncertain."
+**Wording.** `{rate}` is the absolute `slopePerDecade` from `formatNumber`, and `{unit}` is `rateUnit(variable.unit)`. The `mixed` sentence prints the rate without its sign, so it names the direction in words: `{direction}` is "rising" when the slope is above 0 and "falling" when it is below. When the rate rounds to "0", the `mixed` sentence leaves out its rate clause: "{Name} in {place} may be changing, but our two checks disagree. Treat this as uncertain." A `rise` or `fall` whose rate rounds to "0" says "by less than 0.0000000001 {unit} per decade" in place of "by about {rate} {unit} per decade".
 
 **Years (issue 46).** When `getVerdict` is given `years`, the sentence below begins "From {start} to {end}, " and its first letter is lowered: "From 1995 to 2025, air temperature in the Sahel has risen by about …", "From 1995 to 2025, we found no significant long-term trend in …". Without `years` the sentence is exactly as below; the default, full-record view never passes them, so its wording does not change.
 
@@ -306,7 +311,7 @@ Significance level 0.05. "Excludes 0" means both ends of `ci95` are above 0, or 
 |---|---|
 | `rise` | "{Name} in {place} has risen by about {rate} {unit} per decade, and the evidence is strong." |
 | `fall` | "{Name} in {place} has fallen by about {rate} {unit} per decade, and the evidence is strong." |
-| `mixed` | "{Name} in {place} may be changing, by about {rate} {unit} per decade, but our two checks disagree. Treat this as uncertain." |
+| `mixed` | "{Name} in {place} may be {direction}, by about {rate} {unit} per decade, but our two checks disagree. Treat this as uncertain." |
 | `none` | "We found no significant long-term trend in {name} in {place}. That is a real result: it has stayed within its normal ups and downs." |
 
 `caveat`, on every verdict: "Monthly values are often related to their neighbours, which can make a trend look more certain than it is."
@@ -341,11 +346,14 @@ Nine points is a coarse sample, so the `source` text is the catalog source plus 
 |---|---|---|
 | POWER returns HTTP 429 | `DataError` kind `rate-limit`; message "NASA's data service is busy. Try a prepared region, or wait a minute." | `data`, shown by `ui` |
 | Network failure | `DataError` kind `network`; message "We couldn't reach NASA's data service. Check your connection, or try a prepared region." | `data`, `ui` |
+| Network failure for a region's series file | `DataError` kind `network`; message "We couldn't load this region's data. Check your connection, then choose the region again." The file comes from this site, not from NASA's data service | `data`, `ui` |
+| A failed series load on the Evidence screen | The message, and a "Choose another place" button that goes back to the scene | `ui` |
+| A failed load of the second region | The message, starting with the region's name; the select goes back to "Choose a region", so the same region can be chosen again | `ui` |
 | Point place with `powerParameter: null` | `DataError` kind `unavailable`, with no request made | `data` |
-| Any other HTTP error, a missing region file, or an unreadable response | `DataError` kind `unavailable`; message "This data isn't available for that place. Try a prepared region." | `data`, `ui` |
+| Any other HTTP error, a missing region file, or an unreadable response: a catalog, regions or leads file that is not an array; a region file whose dates are not all "YYYY-MM" or whose values are not all numbers or `null`; POWER parameter data with no monthly keys | `DataError` kind `unavailable`; message "This data isn't available for that place. Try a prepared region." | `data`, `ui` |
 | Demo case at a point place and POWER fails | Load `demo/{id}.json` instead, silently. Region cases are already static files; both demo cases are regions, so this path is not built | `data` |
 | Fill values in a response | Mapped to `null` | `data` |
-| Fewer than 120 valid months | `analyze` returns `null`; screen shows "Not enough data for a verdict. We need at least 120 months and this record has {n}." | `stats`, `ui` |
+| Fewer than 120 valid months | `analyze` returns `null`; screen shows "Not enough data for a verdict. We need at least 120 months and this record has {n}." The chart draws the data without the fit line or its caption | `stats`, `ui` |
 | Constant series | `mkP = 1`, interval `[0, 0]`, verdict `none`; never `NaN` | `stats` |
 | Coordinates out of range or not numbers | `parsePoint` returns `null`; screen shows "Enter a latitude from -90 to 90 and a longitude from -180 to 180." | `place`, `ui` |
 | Same request twice | One network call; failed requests are not cached | `data` |
@@ -360,9 +368,9 @@ Each screen has one `h1`, moves focus to it on entry, and works by keyboard at 3
 | `Clues` | `catalog`, `demoCases`, `onVariable(v)`, `onDemo(c)` | The current question with its live options as buttons; the suspect list with each definition and a count ("4 suspects left"); when one suspect is left, that suspect with its definition and a "Continue" button; when `nextQuestion` is `null` and several remain, the suspects as buttons; two "Open a solved case" buttons |
 | `PlacePicker` | `variable`, `regions`, `leads`, `onPick(place)` | The region list; labeled latitude and longitude inputs (hidden when `powerParameter` is `null`); the leads for the highlighted region and this variable, each with a source link; no leads section when there are none |
 | `CaseBrief` | `variable`, `placeName`, `onConfirm(hunch)`, `onChange()` | "You want to know whether {name} in {place} has changed since {startYear}. Is that right?"; a radio group "Your hunch": rising, falling, no change; "Yes, show me the evidence" disabled until a hunch is chosen; "Change" |
-| `Evidence` | `load` (the `CaseState` load: status, `series`, `error`), `deseasonalized`, `onToggle()`, `onNext()` | `Chart`; a labeled checkbox "Remove the seasonal cycle", on by default; rate, "p-value (below 0.05 counts as significant)" and interval as text, in three stat tiles; the source line; a loading and an error state |
-| `Chart` | `series`, `deseasonalized` | An Observable Plot line of monthly values (anomalies when on) with a straight-line fit, axis units, an accessible label and the caption "Line: straight-line fit to the points shown." The line is for illustration; the reported rate is Sen's slope |
-| `VerdictView` | `variable`, `placeName`, `series`, `deseasonalized`, `hunch`, `regions`, `onRestart()` | The verdict text and caveat; the hunch line; "Compare another region" select; a second verdict card beside the first; a line "These two regions are moving in opposite directions." when `oppositeDirections` is true; an error message for the second region that leaves the first card in place |
+| `Evidence` | `load` (the `CaseState` load: status, `series`, `error`), `deseasonalized`, `onToggle()`, `onNext()`, `onBack()` | `Chart`; a labeled checkbox "Remove the seasonal cycle", on by default; rate, "p-value (below 0.05 counts as significant)" and interval as text, in three stat tiles, the rate and both interval ends signed; the p-value at 3 decimals, "< 0.001" below 0.001, and "< 0.050" when it is below 0.05 but rounds to "0.050"; the source line; a loading state; an error state with a "Choose another place" button |
+| `Chart` | `series`, `deseasonalized`, `fit` (default true) | An Observable Plot line of monthly values (anomalies when on) with a straight-line fit, axis units, an accessible label and the caption "Line: straight-line fit to the points shown." The line is for illustration; the reported rate is Sen's slope. With `fit` false (no result), the fit line, its caption and its mention in the label are left out |
+| `VerdictView` | `variable`, `placeName`, `series`, `deseasonalized`, `hunch`, `regions`, `onRestart()` | The verdict text and caveat; the hunch line; "Compare another region" select; a second verdict card beside the first; a line "These two places are moving in opposite directions." when `oppositeDirections` is true (the first place can be a typed point); an error message for the second region that names it and leaves the first card in place |
 
 **Style:** one stylesheet with custom properties for color, spacing and type. Fira Sans (headings) and Overpass (body), self-hosted, with the system font stack as fallback. Colors from the NASA Space Apps Brand Guidelines. Text contrast of at least 4.5 to 1, except primary button labels on the Rocket Red hover (4.37 to 1), which are 19 px bold so they count as large text. Visible focus outline. No color-only meaning: rise, fall, mixed and none each carry a word.
 

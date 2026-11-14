@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react'
-import { leadsFor, parsePoint } from '../place'
+import { leadsFor, listName, parsePoint } from '../place'
 import type { Lead, Place, Region, Variable } from '../types'
 import { PrimaryButton } from './PrimaryButton'
 import { ScreenHeading } from './ScreenHeading'
@@ -44,7 +44,7 @@ export function PlacePicker({ variable, regions, leads, onPick }: PlacePickerPro
                   checked={regionId === r.id}
                   onChange={() => setRegionId(r.id)}
                 />
-                {r.name}
+                {listName(r.name)}
               </label>
             ))}
           </fieldset>

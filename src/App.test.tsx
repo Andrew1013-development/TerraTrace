@@ -107,3 +107,27 @@ test('a solved case opens straight at the brief', async () => {
   await user.click(await screen.findByRole('button', { name: 'Synthetic demo' }))
   await expectScreen('Case brief')
 })
+
+// Integration report, defect 1.
+test('a failed series load offers a way back to the scene, and a second try works', async () => {
+  const { getSeries } = await import('./data')
+  const error = Object.assign(new Error("We couldn't load this region's data. Check your connection, then choose the region again."), {
+    kind: 'network' as const,
+  })
+  vi.mocked(getSeries).mockRejectedValueOnce(error)
+  const user = userEvent.setup()
+  render(<App />)
+  const toEvidence = async () => {
+    await user.click(screen.getByRole('radio', { name: 'Sahel' }))
+    await user.click(screen.getByRole('button', { name: 'Use this region' }))
+    await user.click(screen.getByRole('radio', { name: 'rising' }))
+    await user.click(screen.getByRole('button', { name: 'Yes, show me the evidence' }))
+  }
+  await user.click(await screen.findByRole('button', { name: 'air temperature' }))
+  await toEvidence()
+  expect(await screen.findByRole('alert')).toHaveTextContent("We couldn't load this region's data.")
+  await user.click(screen.getByRole('button', { name: 'Choose another place' }))
+  await expectScreen('Pick the scene')
+  await toEvidence()
+  expect(await screen.findByRole('button', { name: 'See the verdict' })).toBeInTheDocument()
+})

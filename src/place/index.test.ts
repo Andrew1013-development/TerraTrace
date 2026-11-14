@@ -63,3 +63,13 @@ test('placeName never shows "-0.00" (D8)', () => {
   expect(placeName({ kind: "point", lat: -0.001, lon: -0.004 }, [])).toBe("the area around 0.00, 0.00");
   expect(placeName({ kind: "point", lat: -0.006, lon: 0 }, [])).toBe("the area around -0.01, 0.00");
 });
+
+// Integration report, defect 6.
+test("listName starts a name with a capital and changes nothing else", async () => {
+  const { listName } = await import("./index");
+  expect(listName("the Sahel")).toBe("The Sahel");
+  expect(listName("the central Amazon")).toBe("The central Amazon");
+  expect(listName("Arctic Canada")).toBe("Arctic Canada");
+  expect(listName("the area around 14.50, 0.25")).toBe("The area around 14.50, 0.25");
+  expect(listName("")).toBe("");
+});

@@ -3,7 +3,7 @@ import type { CaseState } from '../App'
 import { Chart } from './Chart'
 import { PrimaryButton } from './PrimaryButton'
 import { analyze, countValid } from '../stats'
-import { formatNumber } from '../verdict'
+import { formatNumber, rateUnit } from '../verdict'
 import { ScreenHeading } from './ScreenHeading'
 
 type EvidenceProps = {
@@ -11,11 +11,14 @@ type EvidenceProps = {
   deseasonalized: boolean
   onToggle: () => void
   onNext: () => void
+  onBack: () => void
 }
 
-const pValue = (p: number) => (p < 0.001 ? '< 0.001' : p.toFixed(3))
+// 3 decimals. A significant p that rounds up to "0.050" reads "< 0.050", so it never looks like the threshold.
+const pValue = (p: number) =>
+  p < 0.001 ? '< 0.001' : p < 0.05 && p.toFixed(3) === '0.050' ? '< 0.050' : p.toFixed(3)
 
-export function Evidence({ load, deseasonalized, onToggle, onNext }: EvidenceProps) {
+export function Evidence({ load, deseasonalized, onToggle, onNext, onBack }: EvidenceProps) {
   const series = load.series
   const result = useMemo(() => (series ? analyze(series, deseasonalized) : null), [series, deseasonalized])
 
@@ -25,9 +28,14 @@ export function Evidence({ load, deseasonalized, onToggle, onNext }: EvidencePro
 
       {load.status === 'loading' && <p role="status">Loading the data…</p>}
       {load.status === 'error' && load.error && (
-        <p role="alert" className="error">
-          {load.error.message}
-        </p>
+        <>
+          <p role="alert" className="error">
+            {load.error.message}
+          </p>
+          <div className="actions">
+            <PrimaryButton onClick={onBack}>Choose another place</PrimaryButton>
+          </div>
+        </>
       )}
 
       {load.status === 'ready' && series && (
@@ -38,7 +46,7 @@ export function Evidence({ load, deseasonalized, onToggle, onNext }: EvidencePro
                 <dt>Rate per decade</dt>
                 <dd>
                   <span className="underline underline-red">
-                    {formatNumber(result.slopePerDecade, true)} {series.unit}
+                    {formatNumber(result.slopePerDecade, true)} {rateUnit(series.unit)}
                   </span>
                 </dd>
               </div>
@@ -52,7 +60,7 @@ export function Evidence({ load, deseasonalized, onToggle, onNext }: EvidencePro
                 <dt>95% interval</dt>
                 <dd>
                   <span className="underline underline-red">
-                    {formatNumber(result.ci95[0])} to {formatNumber(result.ci95[1])} {series.unit}
+                    {formatNumber(result.ci95[0], true)} to {formatNumber(result.ci95[1], true)} {rateUnit(series.unit)}
                   </span>
                 </dd>
               </div>
@@ -63,7 +71,7 @@ export function Evidence({ load, deseasonalized, onToggle, onNext }: EvidencePro
             </p>
           )}
 
-          <Chart series={series} deseasonalized={deseasonalized} />
+          <Chart series={series} deseasonalized={deseasonalized} fit={result !== null} />
 
           <label className="toggle">
             <input type="checkbox" checked={deseasonalized} onChange={onToggle} />
