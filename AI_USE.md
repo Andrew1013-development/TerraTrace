@@ -17,3 +17,4 @@ One line per meaningful use of AI tools. No AI model runs in the app.
 | Task B7 | Dev B | Claude Code | Drafted the methods section in README.md from ARCHITECTURE.md section 7 and the real test results, and corrected the "Before the event" line to match DESIGN.md section 8 | Dev B to confirm |
 | Task A7 | Dev A | Claude Code | Wrote the demo case tests and filled `demoCases` with the two cases chosen in Task B6 | Dev A |
 | Task A6 | Dev A | Claude Code | Surveyed POWER parameters by live call, drafted the 8 new definitions and tags, wrote the catalog tests and reran the precompute script | Dev A |
+| Task B3 | Dev B | Claude Code | Wrote the verdict stub, tests and implementation in src/verdict/ from ARCHITECTURE.md section 7.2; wording copied exactly | Dev B, then Dev C line by line |
