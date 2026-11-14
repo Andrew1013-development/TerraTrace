@@ -19,18 +19,18 @@ export const questions: Question[] = [
     text: "What would you notice changing?",
     options: [
       { label: "It feels hotter or colder", tags: ["temperature"] },
-      { label: "It feels wetter or drier", tags: ["rain", "humidity", "soil"] },
+      { label: "It feels wetter or drier", tags: ["rain", "snow", "humidity"] },
       { label: "It feels windier or calmer", tags: ["wind"] },
       { label: "It feels sunnier or cloudier", tags: ["sun", "cloud"] },
     ],
   },
   {
     id: "wet",
-    text: "Where is the water: falling from the sky, floating in the air, or in the ground?",
+    text: "Is it rain, snow, or moisture in the air?",
     options: [
-      { label: "Rain or snow falling", tags: ["rain"] },
+      { label: "Rain", tags: ["rain"] },
+      { label: "Snow", tags: ["snow"] },
       { label: "Moisture in the air", tags: ["humidity"] },
-      { label: "Water in the ground", tags: ["soil"] },
     ],
   },
   {
