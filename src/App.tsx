@@ -127,8 +127,12 @@ function CurrentScreen({ state, dispatch }: { state: CaseState; dispatch: (e: Ca
     case 'scene':
       return <PlacePicker regions={regions} onPick={(place) => dispatch({ type: 'pickPlace', place })} />
     case 'brief':
+      // The reducer only reaches the brief with a variable and a place set.
+      if (!state.variable || !state.place) return null
       return (
         <CaseBrief
+          variable={state.variable}
+          placeName={tempPlaceName(state.place) ?? ''}
           onConfirm={(hunch) => dispatch({ type: 'confirm', hunch })}
           onChange={() => dispatch({ type: 'change' })}
         />

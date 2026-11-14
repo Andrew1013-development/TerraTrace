@@ -40,6 +40,7 @@ test('walks clues, scene, brief, evidence, verdict and back to clues', async () 
   await user.click(screen.getByRole('button', { name: 'Use this region' }))
 
   await expectScreen('Case brief')
+  await user.click(screen.getByRole('radio', { name: 'rising' }))
   await user.click(screen.getByRole('button', { name: 'Yes, show me the evidence' }))
 
   await expectScreen('The evidence')
