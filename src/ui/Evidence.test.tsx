@@ -9,7 +9,10 @@ vi.mock('../stats', async () => ({
   analyze: vi.fn(),
   countValid: vi.fn(),
   deseasonalize: vi.fn(() => []),
-  ...(await import('../fixtures/period')), // stand-in until the issue 46 functions land
+  // The real period functions (issue 46); only analyze and countValid are stubbed.
+  ...(({ selectableYears, validPeriod, slicePeriod }) => ({ selectableYears, validPeriod, slicePeriod }))(
+    await vi.importActual<typeof import('../stats')>('../stats'),
+  ),
 }))
 // The stand-in chart reports which months it was given.
 vi.mock('./Chart', () => ({

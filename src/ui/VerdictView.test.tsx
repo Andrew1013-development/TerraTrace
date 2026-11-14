@@ -10,7 +10,10 @@ import { VerdictView } from './VerdictView'
 vi.mock('../stats', async () => ({
   analyze: vi.fn(),
   countValid: vi.fn(),
-  ...(await import('../fixtures/period')), // stand-in until the issue 46 functions land
+  // The real period functions (issue 46); only analyze and countValid are stubbed.
+  ...(({ selectableYears, validPeriod, slicePeriod }) => ({ selectableYears, validPeriod, slicePeriod }))(
+    await vi.importActual<typeof import('../stats')>('../stats'),
+  ),
 }))
 vi.mock('../data', () => ({ getSeries: vi.fn() }))
 vi.mock('./starBurst', () => ({ starBurst: vi.fn() }))
