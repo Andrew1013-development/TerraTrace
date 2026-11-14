@@ -6,7 +6,7 @@ const DECIMAL = /^[+-]?(\d+(\.\d*)?|\.\d+)$/;
 
 function parseCoord(text: string, limit: number): number | null {
   // A pasted coordinate often uses the typographic minus "−" (U+2212) (D12).
-  const s = text.trim().replace(",", ".").replace("−", "-");
+  const s = text.trim().replace(",", ".").replace("\u2212", "-");
   if (!DECIMAL.test(s)) return null;
   const n = Number(s);
   return Math.abs(n) <= limit ? n : null;
