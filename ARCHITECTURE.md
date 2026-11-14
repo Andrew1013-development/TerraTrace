@@ -145,6 +145,8 @@ export function placeName(place: Place, regions: Region[]): string;
 export function leadsFor(leads: Lead[], regionId: string, variableId: string): Lead[];
 ```
 
+`placeName` gives a region's `name`, or for a point "the area around {lat}, {lon}" with 2 decimals, so it reads correctly after "in". A POWER point is a grid cell about 50 km across.
+
 ### 4.5 Stats (`src/stats/index.ts`, Dev B)
 
 ```ts
@@ -164,7 +166,10 @@ export function analyze(series: Series, deseasonalized: boolean): TrendResult | 
 export function getVerdict(result: TrendResult, variable: Variable, place: string): Verdict;
 export function hunchLine(hunch: Hunch, verdict: Verdict): string;
 export function oppositeDirections(a: Verdict, b: Verdict): boolean;
+export function formatNumber(x: number, signed?: boolean): string;
 ```
+
+`formatNumber` writes a number at 2 significant figures as a plain decimal, with the true minus sign "−" for negatives and "+" for positives when `signed`. The verdict sentences and the Evidence screen both use it, so the same rate reads the same way everywhere.
 
 ### 4.7 Fixtures (`src/fixtures/index.ts`, Dev B)
 
@@ -207,14 +212,14 @@ All paths are read with `import.meta.env.BASE_URL` as the prefix.
 | `regions.json` | `Region[]` |
 | `leads.json` | `Lead[]` |
 | `series/{variableId}/{regionId}.json` | `Series` |
-| `demo/{demoCaseId}.json` | `Series`, a saved copy for when POWER is unreachable |
+| `demo/{demoCaseId}.json` | `Series`, a saved copy for when POWER is unreachable. Only for a demo case at a point; both demo cases are regions, so none exists |
 
 Example `series` file:
 
 ```json
 {
   "variableId": "T2M", "placeId": "sahel", "unit": "°C",
-  "source": "NASA POWER monthly, sampled regional mean of 9 points",
+  "source": "NASA POWER monthly (MERRA-2), API v2.10.0, sampled regional mean of 9 points",
   "dates": ["1981-01", "1981-02"], "values": [24.1, null]
 }
 ```
@@ -288,7 +293,7 @@ Significance level 0.05. "Excludes 0" means both ends of `ci95` are above 0, or 
 
 `mkP` of exactly 0.05 is not significant. An interval that touches 0 does not exclude it.
 
-**Wording.** `{rate}` is the absolute `slopePerDecade` at 2 significant figures, as a plain decimal.
+**Wording.** `{rate}` is the absolute `slopePerDecade` from `formatNumber`. When it rounds to "0", the `mixed` sentence leaves out its rate clause: "{Name} in {place} may be changing, but our two checks disagree. Treat this as uncertain."
 
 | `kind` | `text` |
 |---|---|
@@ -321,7 +326,7 @@ Questions are plain language and each option carries tags, for example "Is it ab
 
 For each region, sample a 3 by 3 grid of points inside the bbox, at 1/6, 3/6 and 5/6 of each side. Request POWER for each point. For each month, take the mean weighted by `cos(latitude)`, skipping missing values; a month with no values is `null`. Pause between calls and back off after HTTP 429.
 
-Nine points is a coarse sample, so the `source` text says "sampled regional mean of 9 points" and the app shows it.
+Nine points is a coarse sample, so the `source` text is the catalog source plus ", sampled regional mean of 9 points", and the app shows it.
 
 ## 8. Errors and edge cases
 
@@ -331,7 +336,7 @@ Nine points is a coarse sample, so the `source` text says "sampled regional mean
 | Network failure | `DataError` kind `network`; message "We couldn't reach NASA's data service. Check your connection, or try a prepared region." | `data`, `ui` |
 | Point place with `powerParameter: null` | `DataError` kind `unavailable`, with no request made | `data` |
 | Any other HTTP error, a missing region file, or an unreadable response | `DataError` kind `unavailable`; message "This data isn't available for that place. Try a prepared region." | `data`, `ui` |
-| Demo case at a point place and POWER fails | Load `demo/{id}.json` instead, silently. Region cases are already static files | `data` |
+| Demo case at a point place and POWER fails | Load `demo/{id}.json` instead, silently. Region cases are already static files; both demo cases are regions, so this path is not built | `data` |
 | Fill values in a response | Mapped to `null` | `data` |
 | Fewer than 120 valid months | `analyze` returns `null`; screen shows "Not enough data for a verdict. We need at least 120 months and this record has {n}." | `stats`, `ui` |
 | Constant series | `mkP = 1`, interval `[0, 0]`, verdict `none`; never `NaN` | `stats` |
