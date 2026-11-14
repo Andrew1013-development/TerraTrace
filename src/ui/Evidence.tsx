@@ -1,11 +1,13 @@
-import { useMemo } from 'react'
+import { lazy, Suspense, useMemo } from 'react'
 import type { CaseState } from '../App'
-import { Chart } from './Chart'
 import { RulerIcon, ScaleIcon, SpeedIcon } from './icons'
 import { PrimaryButton } from './PrimaryButton'
 import { analyze, countValid, selectableYears, slicePeriod, validPeriod } from '../stats'
 import { formatNumber, rateUnit } from '../verdict'
 import { ScreenHeading } from './ScreenHeading'
+
+// Loaded only on this step, so the charting library stays out of the first page load.
+const Chart = lazy(() => import('./Chart').then((m) => ({ default: m.Chart })))
 
 type Period = NonNullable<CaseState['period']>
 
@@ -31,6 +33,12 @@ export function Evidence({ load, deseasonalized, period, onToggle, onPeriod, onN
   const years = useMemo(() => (series ? selectableYears(series) : []), [series])
   const start = period?.start ?? years[0]
   const end = period?.end ?? years[years.length - 1]
+  const toggle = (
+    <label className="toggle">
+      <input type="checkbox" checked={deseasonalized} onChange={onToggle} />
+      Remove the seasonal cycle
+    </label>
+  )
 
   return (
     <section className="evidence">
@@ -51,12 +59,18 @@ export function Evidence({ load, deseasonalized, period, onToggle, onPeriod, onN
       {load.status === 'ready' && series && shown && (
         <>
           <div className="evidence-body">
-            <Chart series={shown} deseasonalized={deseasonalized} fit={result !== null}>
-              <label className="toggle">
-                <input type="checkbox" checked={deseasonalized} onChange={onToggle} />
-                Remove the seasonal cycle
-              </label>
-            </Chart>
+            <Suspense
+              fallback={
+                <figure className="chart-card">
+                  <p role="status">Loading the chart…</p>
+                  {toggle}
+                </figure>
+              }
+            >
+              <Chart series={shown} deseasonalized={deseasonalized} fit={result !== null}>
+                {toggle}
+              </Chart>
+            </Suspense>
 
             <div className="card evidence-side">
               {years.length > 1 && (
