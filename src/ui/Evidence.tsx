@@ -3,6 +3,7 @@ import type { CaseState } from '../App'
 import { Chart } from './Chart'
 import { PrimaryButton } from './PrimaryButton'
 import { analyze, countValid } from '../stats'
+import { formatNumber } from '../verdict'
 import { ScreenHeading } from './ScreenHeading'
 
 type EvidenceProps = {
@@ -11,9 +12,6 @@ type EvidenceProps = {
   onToggle: () => void
   onNext: () => void
 }
-
-const twoSig = (x: number, sign = false) =>
-  x.toLocaleString('en-US', { maximumSignificantDigits: 2, signDisplay: sign ? 'exceptZero' : 'auto' })
 
 const pValue = (p: number) => (p < 0.001 ? '< 0.001' : p.toFixed(3))
 
@@ -40,7 +38,7 @@ export function Evidence({ load, deseasonalized, onToggle, onNext }: EvidencePro
                 <dt>Rate per decade</dt>
                 <dd>
                   <span className="underline underline-red">
-                    {twoSig(result.slopePerDecade, true)} {series.unit}
+                    {formatNumber(result.slopePerDecade, true)} {series.unit}
                   </span>
                 </dd>
               </div>
@@ -54,7 +52,7 @@ export function Evidence({ load, deseasonalized, onToggle, onNext }: EvidencePro
                 <dt>95% interval</dt>
                 <dd>
                   <span className="underline underline-red">
-                    {twoSig(result.ci95[0])} to {twoSig(result.ci95[1])} {series.unit}
+                    {formatNumber(result.ci95[0])} to {formatNumber(result.ci95[1])} {series.unit}
                   </span>
                 </dd>
               </div>

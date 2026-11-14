@@ -44,8 +44,8 @@ describe("placeName and leadsFor", () => {
   test("placeName gives the region name, or the coordinates to 2 decimals for a point", () => {
     expect(placeName({ kind: "region", id: "sahel" }, sampleRegions)).toBe("Sahel");
     expect(placeName({ kind: "region", id: "unknown-id" }, sampleRegions)).toBe("unknown-id");
-    expect(placeName({ kind: "point", lat: 10.5, lon: 106.7 }, sampleRegions)).toBe("10.50, 106.70");
-    expect(placeName({ kind: "point", lat: -33.9, lon: 151.2 }, sampleRegions)).toBe("-33.90, 151.20");
+    expect(placeName({ kind: "point", lat: 10.5, lon: 106.7 }, sampleRegions)).toBe("the area around 10.50, 106.70");
+    expect(placeName({ kind: "point", lat: -33.9, lon: 151.2 }, sampleRegions)).toBe("the area around -33.90, 151.20");
   });
 
   test("leadsFor returns only leads matching both the region and the variable", () => {
@@ -60,6 +60,6 @@ test('parsePoint accepts the typographic minus sign "−" (D12)', () => {
 });
 
 test('placeName never shows "-0.00" (D8)', () => {
-  expect(placeName({ kind: "point", lat: -0.001, lon: -0.004 }, [])).toBe("0.00, 0.00");
-  expect(placeName({ kind: "point", lat: -0.006, lon: 0 }, [])).toBe("-0.01, 0.00");
+  expect(placeName({ kind: "point", lat: -0.001, lon: -0.004 }, [])).toBe("the area around 0.00, 0.00");
+  expect(placeName({ kind: "point", lat: -0.006, lon: 0 }, [])).toBe("the area around -0.01, 0.00");
 });

@@ -22,7 +22,8 @@ export function parsePoint(lat: string, lon: string): Place | null {
 const coord = (x: number) => x.toFixed(2).replace(/^-(0\.00)$/, "$1");
 
 export function placeName(place: Place, regions: Region[]): string {
-  if (place.kind === "point") return `${coord(place.lat)}, ${coord(place.lon)}`;
+  // Reads correctly after "in", and is honest: a POWER point is a grid cell about 50 km across (D17).
+  if (place.kind === "point") return `the area around ${coord(place.lat)}, ${coord(place.lon)}`;
   return regions.find((r) => r.id === place.id)?.name ?? place.id;
 }
 
