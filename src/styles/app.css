@@ -947,7 +947,9 @@ button.rail-step-button:hover { background: rgba(201, 210, 245, 0.12); }
 /* Scene: map on top; region and coordinates side by side below. */
 .map-card { margin-bottom: var(--space-4); }
 .world-map { margin: 0; }
-.world-map-plot svg { display: block; width: 100%; height: auto; max-height: 340px; margin: 0 auto; }
+.world-map-globe { width: 100%; height: min(440px, 85vw); border-radius: var(--radius); background: radial-gradient(circle at 50% 50%, #0B2A63 0%, var(--deep-blue) 70%); overflow: hidden; }
+.world-map-globe canvas { display: block; }
+.map-hint { margin-top: var(--space-1); font-size: var(--text-sm); color: var(--muted); }
 .map-caption { margin: var(--space-2) 0 0; font-size: var(--text-sm); color: var(--muted); }
 .map-card .leads { margin-top: var(--space-4); border-top: 1px solid var(--line); padding-top: var(--space-3); }
 .scene-controls { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-4); }

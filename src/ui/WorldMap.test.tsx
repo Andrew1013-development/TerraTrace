@@ -1,47 +1,37 @@
-import { render, screen, waitFor } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
+import { render, screen } from '@testing-library/react'
 import { sampleRegions } from '../fixtures'
+import { densify, toLatLon, toVector } from './globe'
 import { WorldMap } from './WorldMap'
 
-vi.mock('../data', () => ({
-  loadLand: vi.fn(() =>
-    Promise.resolve({
-      type: 'FeatureCollection',
-      features: [{ type: 'Feature', geometry: { type: 'Polygon', coordinates: [[[0, 0], [0, 10], [10, 10], [10, 0], [0, 0]]] } }],
-    }),
-  ),
-  loadRegionShapes: vi.fn(() =>
-    Promise.resolve({
-      sahel: { type: 'MultiPolygon', outline: 'land', coordinates: [[[[-10, 13], [-10, 15], [20, 15], [20, 13], [-10, 13]]]] },
-    }),
-  ),
-}))
+vi.mock('../data', () => ({ loadRegionShapes: vi.fn(() => Promise.resolve({})) }))
 
-test('draws every region box, and a highlight only for the chosen region', async () => {
-  const { container, rerender } = render(<WorldMap regions={sampleRegions} label="World map" />)
-  expect(screen.getByRole('img', { name: 'World map' })).toBeInTheDocument()
-  expect(container.querySelectorAll('.map-regions path')).toHaveLength(sampleRegions.length)
-  expect(container.querySelector('.map-highlight')).toBeNull()
-  rerender(<WorldMap regions={sampleRegions} highlight="sahel" label="World map, the Sahel highlighted" />)
-  await waitFor(() => expect(container.querySelector('.map-highlight path')).not.toBeNull())
+// The globe itself needs WebGL, which jsdom lacks; it is checked in the browser. Here: its geometry and its fallback.
+
+test('a point on the globe turns back into the same latitude and longitude', () => {
+  for (const [lat, lon] of [[10.5, 106.7], [-33.9, -151.2], [0, 0], [70, -179], [-89, 179.5]]) {
+    const back = toLatLon(...toVector(lat, lon))
+    expect(back.lat).toBeCloseTo(lat, 6)
+    expect(back.lon).toBeCloseTo(lon, 6)
+  }
+})
+
+test('the globe matches the texture: longitude 0 faces +x and the north pole is +y', () => {
+  const [x, y, z] = toVector(0, 0)
+  expect([x, y, z].map((v) => Math.round(v * 1e6) / 1e6)).toEqual([1, 0, 0])
+  expect(toVector(90, 0)[1]).toBeCloseTo(1, 6)
+})
+
+test('densify adds points so no step is longer than 1 degree', () => {
+  const ring = densify([[0, 0], [3, 0], [3, 0.5], [0, 0]])
+  expect(ring[0]).toEqual([0, 0])
+  expect(ring.at(-1)).toEqual([0, 0])
+  for (let i = 1; i < ring.length; i++) {
+    expect(Math.max(Math.abs(ring[i][0] - ring[i - 1][0]), Math.abs(ring[i][1] - ring[i - 1][1]))).toBeLessThanOrEqual(1)
+  }
+})
+
+test('without WebGL the map says so and still has its label', () => {
+  render(<WorldMap regions={sampleRegions} label="World map, the Sahel highlighted" />)
   expect(screen.getByRole('img', { name: 'World map, the Sahel highlighted' })).toBeInTheDocument()
-})
-
-test('a typed point is a pin, not a region highlight', () => {
-  const { container } = render(<WorldMap regions={sampleRegions} pin={{ lat: 48.9, lon: 2.3 }} label="World map" />)
-  expect(container.querySelector('.map-pin')).not.toBeNull()
-  expect(container.querySelector('.map-highlight')).toBeNull()
-})
-
-test('land is coloured with a latitude gradient', async () => {
-  const { container } = render(<WorldMap regions={sampleRegions} label="World map" />)
-  await waitFor(() => expect(container.querySelector('linearGradient stop')).not.toBeNull())
-  expect(container.querySelectorAll('linearGradient stop').length).toBeGreaterThan(10)
-})
-
-test('clicking a region box picks that region', async () => {
-  const onRegion = vi.fn()
-  const { container } = render(<WorldMap regions={sampleRegions} label="World map" onRegion={onRegion} />)
-  await userEvent.click(container.querySelectorAll('.map-regions path')[1])
-  expect(onRegion).toHaveBeenCalledWith(sampleRegions[1].id)
+  expect(screen.getByText(/can't draw the 3D globe/)).toBeInTheDocument()
 })

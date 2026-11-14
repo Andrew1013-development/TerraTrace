@@ -49,7 +49,7 @@ export function PlacePicker({ variable, regions, leads, place, onPick }: PlacePi
             countries && countryAt(point.lat, point.lon, countries),
           )}.`
       : listRegion
-        ? `Highlighted: ${listRegion.name}. The dashed box is the area its 9 sampled points average over.`
+        ? `Highlighted: ${listRegion.name}. The case averages 9 sampled points across this region.`
         : 'Pick a region, or type coordinates, to see it on the map.'
 
   const submitPoint = async (e: FormEvent) => {

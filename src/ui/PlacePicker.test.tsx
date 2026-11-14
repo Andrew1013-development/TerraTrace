@@ -125,7 +125,7 @@ test('the map highlights the region chosen from the list, with no pin', async ()
   await user.selectOptions(region(), 'Sahel')
   expect(map().getAttribute('data-highlight')).toBe('sahel')
   expect(map().getAttribute('data-pin')).toBe('')
-  expect(screen.getByText(/Highlighted: Sahel\. The dashed box is the area its 9 sampled points average over\./)).toBeInTheDocument()
+  expect(screen.getByText(/Highlighted: Sahel\. The case averages 9 sampled points across this region\./)).toBeInTheDocument()
 })
 
 test('a place already chosen comes back selected', () => {

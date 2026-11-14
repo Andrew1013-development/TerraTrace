@@ -42,10 +42,6 @@ export function loadLeads(): Promise<Lead[]> {
 }
 
 // Natural Earth 1:110m land outlines (public domain), for the Scene screen's map.
-export type Land = { type: "FeatureCollection"; features: { type: "Feature"; geometry: object }[] };
-export function loadLand(): Promise<Land> {
-  return loadFile("land.json");
-}
 
 // Each region's real outline trimmed to its box (scripts/make_map_shapes.py), for the Scene map.
 export type RegionShapes = Record<string, { type: "MultiPolygon"; coordinates: number[][][][]; outline: string }>;

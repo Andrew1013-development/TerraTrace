@@ -1,4 +1,4 @@
-from make_map_shapes import clip_geometry, clip_ring
+from make_map_shapes import clip_geometry, clip_ring, outer_rings
 
 BOX = [0, 0, 10, 10]  # south, west, north, east
 
@@ -28,3 +28,8 @@ def test_clip_geometry_keeps_only_parts_inside_and_rounds():
     parts = clip_geometry(geoms, BOX)
     assert len(parts) == 1
     assert parts[0][0][0] == [1.23, 1.23]
+
+
+def test_outer_rings_keeps_the_whole_outline_and_drops_holes():
+    geom = {"type": "Polygon", "coordinates": [[[0, 0], [0, 50.123], [50, 50], [0, 0]], [[1, 1], [1, 2], [2, 2], [1, 1]]]}
+    assert outer_rings([geom]) == [[[[0, 0], [0, 50.12], [50, 50], [0, 0]]]]

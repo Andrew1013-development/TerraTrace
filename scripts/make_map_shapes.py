@@ -2,9 +2,10 @@
 
     python scripts/make_map_shapes.py <ne_110m_geography_regions_polys.geojson> <ne_110m_admin_0_countries.geojson>
 
-public/data/region-shapes.json: for each region in regions.json, its real outline (a named Natural Earth area, or
-the land coastline where none exists) trimmed to the region's box, so the red shape never claims more than the
-9 sampled points cover.
+public/data/region-shapes.json: for each region in regions.json, its real outline. A region that is a whole named
+Natural Earth area (the Sahara, the Plateau of Tibet) gets that area's full outline. A part of one ("the central
+Amazon") or a region with no named area gets the outline trimmed to the region's box, so it never claims a much
+larger area than the 9 sampled points cover.
 public/data/countries.json: country outlines and names, for naming a typed point outside every region.
 """
 import json
@@ -23,7 +24,11 @@ NAMED = {
     "tibetan-plateau": "PLATEAU OF TIBET",
     "us-great-plains": "GREAT PLAINS",
     "antarctic-peninsula": "Antarctic Peninsula",
+    "iberian-peninsula": "PENÍNSULA IBÉRICA",
 }
+
+# Regions that are the whole named area: drawn with its full outline, not trimmed to the box.
+WHOLE = {"arctic-canada", "sahara", "tibetan-plateau", "us-great-plains", "antarctic-peninsula", "iberian-peninsula"}
 
 
 def clip_ring(ring, box):
@@ -78,6 +83,11 @@ def clip_geometry(geometries, box):
     return parts
 
 
+def outer_rings(geometries):
+    """Every polygon's outer ring, rounded; MultiPolygon coordinates (holes dropped at this scale)."""
+    return [[[[round(x, 2), round(y, 2)] for x, y in poly[0]]] for g in geometries for poly in polygons(g)]
+
+
 def round_geometry(g, places):
     r = lambda c: [round(c[0], places), round(c[1], places)]
     if g["type"] == "Polygon":
@@ -91,7 +101,7 @@ def main(regions_path, countries_path):
     shapes = {}
     for region in json.loads((DATA / "regions.json").read_text(encoding="utf-8")):
         source = [named[NAMED[region["id"]]]] if region["id"] in NAMED else land
-        parts = clip_geometry(source, region["bbox"])
+        parts = outer_rings(source) if region["id"] in WHOLE else clip_geometry(source, region["bbox"])
         shapes[region["id"]] = {"type": "MultiPolygon", "coordinates": parts, "outline": NAMED.get(region["id"], "land")}
     (DATA / "region-shapes.json").write_text(json.dumps(shapes, separators=(",", ":"), allow_nan=False), encoding="utf-8")
 
