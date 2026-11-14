@@ -36,3 +36,4 @@ One line per meaningful use of AI tools. No AI model runs in the app.
 | Live POWER check | Dev A | Claude Code | Wrote the manual live check (8 points against golden values from the independent recomputation), its Vitest config and the manual workflow | Dev A |
 | Custom period, back end | Dev A | Claude Code | Planned the custom-period feature with Dev A (issue 46), and wrote the src/stats and src/verdict stubs, tests and implementation | Dev A, Dev C |
 | UX pass | Dev C | Claude Code | Built the navigable rail with Previous/Next, the clue illustrations and their animations, the Scene world map with grid-cell highlight, and the tighter layouts with icons, with their tests; prepared the Natural Earth land file | Dev C |
+| Question wording | Dev C, for Dev A | Claude Code | Wrote questionText and its tests in src/clues, and put the live-choices placeholder in three questions so the text names only the choices shown | Dev C |

@@ -12,7 +12,7 @@ vi.mock('../clues', async (importOriginal) => ({
   questions: [
     {
       id: 'sphere',
-      text: 'Is it about the air or the land?',
+      text: 'Is it about {options}?', // filled with the live choices by questionText
       options: [
         { label: 'The air', tags: ['air'] },
         { label: 'The land', tags: ['land'] },

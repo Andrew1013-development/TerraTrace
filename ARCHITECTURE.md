@@ -136,6 +136,8 @@ export const questions: Question[];
 export function narrow(suspects: Variable[], option: { tags: string[] }): Variable[];
 export function liveOptions(question: Question, suspects: Variable[]): Question["options"];
 export function nextQuestion(suspects: Variable[], askedIds: string[], questions: Question[]): Question | null;
+// The question as shown: "{options}" in its text becomes the live choices ("the air or the land").
+export function questionText(question: Question, options: Question["options"]): string;
 ```
 
 ### 4.4 Place (`src/place/index.ts`, Dev B)

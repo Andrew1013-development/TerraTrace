@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { liveOptions, narrow, nextQuestion, questions } from '../clues'
+import { liveOptions, narrow, nextQuestion, questionText, questions } from '../clues'
 import { artForOption, artForVariable, ClueArt, type ArtName } from './ClueArt'
 import type { DemoCase, Variable } from '../types'
 import { PrimaryButton } from './PrimaryButton'
@@ -22,6 +22,7 @@ export function Clues({ catalog, demoCases, onVariable, onDemo }: CluesProps) {
   const [popping, setPopping] = useState(false)
   const question = nextQuestion(suspects, asked, questions)
   const left = suspects.length
+  const live = question ? liveOptions(question, suspects) : []
 
   // After each answer or restart, focus what comes next, so keyboard and screen reader users keep their place.
   const next = useRef<HTMLElement | null>(null)
@@ -68,10 +69,10 @@ export function Clues({ catalog, demoCases, onVariable, onDemo }: CluesProps) {
           {question ? (
             <fieldset className="question">
               <legend ref={setNext} tabIndex={-1}>
-                {question.text}
+                {questionText(question, live)}
               </legend>
               <div className="options">
-                {liveOptions(question, suspects).map((o) => (
+                {live.map((o) => (
                   <button
                     key={o.label}
                     type="button"
