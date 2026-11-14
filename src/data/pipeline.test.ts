@@ -84,7 +84,7 @@ describe("3. Scene: places and leads", () => {
     for (const r of regions) expect(placeName({ kind: "region", id: r.id }, regions)).toBe(r.name);
     const p = parsePoint("10,5", "106.7");
     expect(p).toEqual({ kind: "point", lat: 10.5, lon: 106.7 });
-    expect(placeName(p!, regions)).toBe("10.50, 106.70");
+    expect(placeName(p!, regions)).toBe("the area around 10.50, 106.70");
     expect(parsePoint("91", "0")).toBeNull();
     expect(parsePoint("abc", "1")).toBeNull();
   });
@@ -159,7 +159,8 @@ describe("5. Verdict: every catalog variable in every region, both toggle states
     return new RegExp({
       rise: `${lead} has risen by about ${RATE} ${rest}, and the evidence is strong\\.$`,
       fall: `${lead} has fallen by about ${RATE} ${rest}, and the evidence is strong\\.$`,
-      mixed: `${lead} may be changing, by about ${RATE} ${rest}, but our two checks disagree\\. Treat this as uncertain\\.$`,
+      // The rate clause is left out when it rounds to 0 (D1).
+      mixed: `${lead} may be changing(?:, by about ${RATE} ${rest})?, but our two checks disagree\\. Treat this as uncertain\\.$`,
       none: `^We found no significant long-term trend in ${where}\\. That is a real result: it has stayed within its normal ups and downs\\.$`,
     }[kind]);
   }
@@ -177,8 +178,10 @@ describe("5. Verdict: every catalog variable in every region, both toggle states
           expect(["rise", "fall", "mixed", "none"], at).toContain(verdict.kind);
           const m = verdict.text.match(template(verdict.kind, v, place));
           expect(m, `${at}: "${verdict.text}"`).not.toBeNull();
-          if (verdict.kind !== "none") {
+          if (verdict.kind !== "none" && m![1] !== undefined) {
             expect(Number(m![1]), at).toBe(Number(Math.abs(t.slopePerDecade).toPrecision(2)));
+          } else if (verdict.kind === "mixed") {
+            expect(Math.abs(t.slopePerDecade), `${at}: rate left out but not 0`).toBeLessThan(1e-10);
           }
           expect(verdict.text, at).not.toMatch(/\de[+-]?\d/);
           expect(verdict.caveat, at).toBe(CAVEAT);

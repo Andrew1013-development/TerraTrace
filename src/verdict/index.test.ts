@@ -1,7 +1,7 @@
 import { describe, expect, test } from "vitest";
 import { sampleCatalog } from "../fixtures";
 import type { TrendResult, Verdict } from "../types";
-import { getVerdict, hunchLine, oppositeDirections } from "./index";
+import { formatNumber, getVerdict, hunchLine, oppositeDirections } from "./index";
 
 const T2M = sampleCatalog.find((v) => v.id === "T2M")!; // name "air temperature", unit "°C"
 const PLACE = "Sahel";
@@ -77,7 +77,6 @@ describe("verdict wording", () => {
     expect(text(r(0.01, [-0.3, -0.1], -0.2449))).toContain("by about 0.24 °C");
     expect(text(r(0.2, [0.1, 0.3], 0.00000012))).toContain("by about 0.00000012 °C");
     expect(text(r(0.2, [0.1, 0.3], 1234567))).toContain("by about 1200000 °C");
-    expect(text(r(0.01, [0.1, 0.3], 0))).toContain("by about 0 °C");
     for (const slope of [0.00000012, 1234567, 0.000456, 98765]) {
       expect(text(r(0.2, [0.1, 0.3], slope))).not.toMatch(/\de[+-]?\d/);
     }
@@ -107,4 +106,38 @@ describe("hunch and comparison", () => {
     expect(oppositeDirections(v("rise"), v("mixed"))).toBe(false);
     expect(oppositeDirections(v("none"), v("fall"))).toBe(false);
   });
+});
+
+test("extreme rates never throw, use exponent form, or print Infinity (D9)", () => {
+  const say = (slope: number) => text(r(0.2, [0.1, 0.3], slope)); // mixed: the rate is in the sentence
+  expect(() => say(1e-100)).not.toThrow();
+  expect(say(1e-100)).toBe(ZERO_MIXED);
+  expect(say(-1.5e-20)).toBe(ZERO_MIXED);
+  expect(say(0.00000012)).toContain("by about 0.00000012 °C"); // unchanged above the floor
+  expect(say(1e21)).toContain("by about 1000000000000000000000 °C");
+  expect(say(1.5e21)).toContain("by about 1500000000000000000000 °C");
+  const huge = say(Number.MAX_VALUE);
+  expect(huge).toMatch(/by about 18\d+ °C/);
+  for (const s of [1e-100, 1.5e-20, 1e21, 1.5e21, Number.MAX_VALUE]) {
+    expect(say(s)).not.toMatch(/\de[+-]?\d|Infinity|NaN/);
+  }
+});
+
+// D1: a mixed verdict whose rate rounds to 0 leaves the rate clause out (section 7.2, proposed).
+const ZERO_MIXED = "Air temperature in Sahel may be changing, but our two checks disagree. Treat this as uncertain.";
+
+test("a mixed verdict with a zero rate does not say \"by about 0\" (D1)", () => {
+  expect(text(r(0.01, [0.1, 0.3], 0))).toBe(ZERO_MIXED); // significant, slope exactly 0
+  expect(text(r(0.2, [0.1, 0.3], 1e-12))).toBe(ZERO_MIXED); // not significant, interval excludes 0
+  expect(text(r(0.2, [0.1, 0.3], 0.0049))).toContain("by about 0.0049 °C"); // a small real rate keeps it
+});
+
+test("formatNumber: 2 significant figures, a true minus sign, and + only when asked (D16)", () => {
+  expect(formatNumber(0.2)).toBe("0.20");
+  expect(formatNumber(0.2, true)).toBe("+0.20");
+  expect(formatNumber(-0.12)).toBe("−0.12");
+  expect(formatNumber(-0.054, true)).toBe("−0.054");
+  expect(formatNumber(1234.5)).toBe("1200");
+  expect(formatNumber(0, true)).toBe("0");
+  expect(formatNumber(-1e-12)).toBe("0");
 });

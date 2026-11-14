@@ -5,13 +5,21 @@ const ALPHA = 0.05;
 const CAVEAT =
   "Monthly values are often related to their neighbours, which can make a trend look more certain than it is.";
 
-// Absolute value at 2 significant figures as a plain decimal; toPrecision alone gives "1.2e-7".
-function formatRate(x: number): string {
+// 2 significant figures as a plain decimal; toPrecision alone gives "1.2e-7". Negatives use the
+// true minus sign; "+" only when signed. Shared with the Evidence screen, so both read alike (D16).
+// Below 1e-10 it shows "0": toFixed throws past 100 digits and prints 20+ digits long before (D9).
+export function formatNumber(x: number, signed = false): string {
   const a = Math.abs(x);
-  if (a === 0) return "0";
+  if (!(a >= 1e-10)) return "0";
   const rounded = Number(a.toPrecision(2));
-  const decimals = Math.max(0, 1 - Math.floor(Math.log10(rounded)));
-  return rounded.toFixed(decimals);
+  let digits: string;
+  if (rounded < 1e21) digits = rounded.toFixed(Math.max(0, 1 - Math.floor(Math.log10(rounded))));
+  else {
+    // toFixed switches to exponent form from 1e21: write the 2 digits and pad with zeros (D9).
+    const [mantissa, exponent] = a.toPrecision(2).split("e");
+    digits = mantissa.replace(".", "").padEnd(Number(exponent) + 1, "0");
+  }
+  return (x < 0 ? "\u2212" : signed ? "+" : "") + digits;
 }
 
 const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
@@ -28,11 +36,15 @@ export function getVerdict(result: TrendResult, variable: Variable, place: strin
   else kind = significant || excludesZero ? "mixed" : "none";
 
   const Name = capitalize(variable.name);
-  const rate = `${formatRate(slope)} ${variable.unit}`;
+  const shown = formatNumber(Math.abs(slope));
+  const rate = `${shown} ${variable.unit}`;
   const text = {
     rise: `${Name} in ${place} has risen by about ${rate} per decade, and the evidence is strong.`,
     fall: `${Name} in ${place} has fallen by about ${rate} per decade, and the evidence is strong.`,
-    mixed: `${Name} in ${place} may be changing, by about ${rate} per decade, but our two checks disagree. Treat this as uncertain.`,
+    // A rate that rounds to 0 would read "by about 0", which contradicts "may be changing" (D1).
+    mixed: shown === "0"
+      ? `${Name} in ${place} may be changing, but our two checks disagree. Treat this as uncertain.`
+      : `${Name} in ${place} may be changing, by about ${rate} per decade, but our two checks disagree. Treat this as uncertain.`,
     none: `We found no significant long-term trend in ${variable.name} in ${place}. That is a real result: it has stayed within its normal ups and downs.`,
   }[kind];
 

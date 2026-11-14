@@ -50,7 +50,8 @@ test('rate, p-value and interval are three labeled tiles in one group', () => {
     '95% interval',
   ])
   expect(within(group).getByText('+0.24 °C')).toBeInTheDocument()
-  expect(within(group).getByText('0.18 to 0.3 °C')).toBeInTheDocument()
+  // Same formatter as the verdict: 2 significant figures, so 0.3 reads 0.30 (D16).
+  expect(within(group).getByText('0.18 to 0.30 °C')).toBeInTheDocument()
 })
 
 test('the source line is visible', () => {
