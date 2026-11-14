@@ -12,8 +12,12 @@ vi.mock('./WorldMap', () => ({
     <figure aria-label={p.label} data-highlight={p.highlight ?? ''} data-pin={p.pin ? `${p.pin.lat},${p.pin.lon}` : ''} />
   ),
 }))
-// One square "country" around Paris, for naming points outside every region.
+// One square "country" around Paris, for naming points outside every region; and a Sahel outline that reaches north
+// of its box (to 22°N) but misses its north-west corner, like the real outlines that differ from their boxes.
 vi.mock('../data', () => ({
+  loadRegionShapes: vi.fn(() =>
+    Promise.resolve({ sahel: { type: 'MultiPolygon', outline: 'test', coordinates: [[[[-17, 12], [35, 12], [10, 22], [-17, 12]]]] } }),
+  ),
   loadCountries: vi.fn(() =>
     Promise.resolve({
       type: 'FeatureCollection',
@@ -62,7 +66,11 @@ test('a typed point inside a region picks that region, and the map shows the reg
   await user.type(longitude(), '106.7')
   expect(map().getAttribute('data-highlight')).toBe('mekong-delta')
   expect(map().getAttribute('data-pin')).toBe('10.5,106.7')
-  expect(screen.getByText('This point is inside Mekong Delta, so the case uses the data for Mekong Delta.')).toBeInTheDocument()
+  expect(
+    screen.getByText(
+      'This point is inside Mekong Delta, so the case uses the data for Mekong Delta: an average of 9 points sampled inside the region, which may not include this exact spot.',
+    ),
+  ).toBeInTheDocument()
   await user.click(screen.getByRole('button', { name: 'Use these coordinates' }))
   expect(onPick).toHaveBeenCalledWith({ kind: 'region', id: 'mekong-delta' })
 })
@@ -133,7 +141,7 @@ test('the map highlights the region chosen from the list, with no pin', async ()
   await user.selectOptions(region(), 'Sahel')
   expect(map().getAttribute('data-highlight')).toBe('sahel')
   expect(map().getAttribute('data-pin')).toBe('')
-  expect(screen.getByText(/Highlighted: Sahel\. The case averages 9 sampled points across this region\./)).toBeInTheDocument()
+  expect(screen.getByText(/Highlighted: Sahel\. The case uses an average of 9 points sampled inside this region\./)).toBeInTheDocument()
 })
 
 test('a place already chosen comes back selected', () => {
@@ -152,4 +160,24 @@ test('when the country file fails, a point is never called "at sea": it keeps it
   await user.click(screen.getByRole('button', { name: 'Use these coordinates' }))
   await waitFor(() => expect(onPick).toHaveBeenCalledWith({ kind: 'point', lat: 48.86, lon: 2.35 }))
   vi.mocked(loadCountries).mockReset()
+})
+
+test("a typed point inside a region's outline but outside its box picks that region (audit 1)", async () => {
+  const { onPick, user } = renderPicker()
+  await user.type(latitude(), '19')
+  await user.type(longitude(), '10')
+  await waitFor(() => expect(map().getAttribute('data-highlight')).toBe('sahel'))
+  expect(screen.getByText(/This point is inside Sahel/)).toBeInTheDocument()
+  await user.click(screen.getByRole('button', { name: 'Use these coordinates' }))
+  expect(onPick).toHaveBeenCalledWith({ kind: 'region', id: 'sahel' })
+})
+
+test("a typed point inside a region's box but outside its outline is not that region (audit 1)", async () => {
+  const { onPick, user } = renderPicker()
+  await user.type(latitude(), '15.5')
+  await user.type(longitude(), '-16')
+  await waitFor(() => expect(screen.getByText(/outside the prepared regions/)).toBeInTheDocument())
+  expect(map().getAttribute('data-highlight')).toBe('')
+  await user.click(screen.getByRole('button', { name: 'Use these coordinates' }))
+  await waitFor(() => expect(onPick).toHaveBeenCalledWith(expect.objectContaining({ kind: 'point', lat: 15.5, lon: -16 })))
 })
