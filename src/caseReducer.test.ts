@@ -160,3 +160,14 @@ test('the period resets when the variable or place changes, and on Change', () =
   const demo = caseReducer({ ...narrowed, screen: 'clues' }, { type: 'openDemo', variable: v, place: p })
   expect([variable, place, change, demo].map((s) => s.period)).toEqual([null, null, null, null])
 })
+
+test('choosing a hunch on a revisited brief is kept when the user leaves with Next (audit 2)', () => {
+  const back = caseReducer(done, { type: 'goTo', screen: 'brief' })
+  const chosen = caseReducer(back, { type: 'chooseHunch', hunch: 'none' })
+  expect(chosen).toMatchObject({ screen: 'brief', hunch: 'none', load: done.load })
+  expect(caseReducer(chosen, { type: 'goTo', screen: 'verdict' })).toMatchObject({ screen: 'verdict', hunch: 'none' })
+})
+
+test('chooseHunch is ignored outside the brief', () => {
+  expect(caseReducer(done, { type: 'chooseHunch', hunch: 'fall' })).toBe(done)
+})

@@ -10,8 +10,9 @@ const v = sampleCatalog[1] // precipitation
 function renderBrief() {
   const onConfirm = vi.fn()
   const onChange = vi.fn()
-  render(<CaseBrief variable={v} placeName="Arctic Canada" onConfirm={onConfirm} onChange={onChange} />)
-  return { onConfirm, onChange }
+  const onHunch = vi.fn()
+  render(<CaseBrief variable={v} placeName="Arctic Canada" onHunch={onHunch} onConfirm={onConfirm} onChange={onChange} />)
+  return { onConfirm, onChange, onHunch }
 }
 
 test('shows the sentence from architecture section 9 with the name, place and start year', () => {
@@ -61,7 +62,14 @@ test('each label maps to its hunch value', async () => {
 })
 
 test('a hunch already given comes back selected, so a revisited brief keeps it', () => {
-  render(<CaseBrief variable={v} placeName="Arctic Canada" hunch="fall" onConfirm={vi.fn()} onChange={vi.fn()} />)
+  render(<CaseBrief variable={v} placeName="Arctic Canada" hunch="fall" onHunch={vi.fn()} onConfirm={vi.fn()} onChange={vi.fn()} />)
   expect(screen.getByRole('radio', { name: 'falling' })).toBeChecked()
   expect(screen.getByRole('button', { name: 'Yes, show me the evidence' })).toBeEnabled()
+})
+
+test('choosing a hunch reports it at once, so leaving with Next keeps it (audit 2)', async () => {
+  const { onHunch, onConfirm } = renderBrief()
+  await userEvent.click(screen.getByRole('radio', { name: 'no change' }))
+  expect(onHunch).toHaveBeenCalledWith('none')
+  expect(onConfirm).not.toHaveBeenCalled()
 })
