@@ -165,3 +165,9 @@ describe("seasonal paths with a gap and a mid-year start (D3)", () => {
     for (const v of out) if (v !== null) expect(Math.abs(v)).toBeLessThan(1e-9);
   });
 });
+
+test("olsSlopeCi never returns NaN, even below 3 points (D11)", () => {
+  for (const [t, y] of [[[], []], [[0], [1]], [[0, 1], [5, 5]], [[0, 1], [1, 3]]] as const) {
+    expect(olsSlopeCi([...t], [...y]).every(Number.isFinite), JSON.stringify([t, y])).toBe(true);
+  }
+});

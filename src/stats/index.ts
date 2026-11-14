@@ -97,6 +97,8 @@ export function seasonalMannKendallP(y: number[], months: number[]): number {
 
 export function olsSlopeCi(t: number[], y: number[]): [number, number] {
   const n = y.length;
+  // No interval exists below 3 points (n - 2 degrees of freedom); analyze never asks below 120 (D11).
+  if (n < 3) return [0, 0];
   const tMean = t.reduce((a, b) => a + b, 0) / n;
   const yMean = y.reduce((a, b) => a + b, 0) / n;
   let sxy = 0;
