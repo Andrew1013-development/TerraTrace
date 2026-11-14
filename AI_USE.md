@@ -31,3 +31,4 @@ One line per meaningful use of AI tools. No AI model runs in the app.
 | Issue 23 | Dev A | Claude Code | Wrote the failing test and renamed TS to "surface temperature" to match its land-or-sea definition | Dev A |
 | Region names | Dev A | Claude Code | Applied Dev C's region names from issue 17 and added pipeline tests for them and the Tibet demo sentences | Dev A |
 | Agent guides | Dev A | Claude Code | Wrote GEMINI.md (Antigravity, integration reviewer) and AGENTS.md (Codex, back-end reviewer) from the architecture and the facts verified during the build | Dev A |
+| Back-end defects, Dev A | Dev A | Claude Code | Wrote failing tests and fixes for D2, D4, D5, D7, D8 (data half), D10, D13 and D14 from the definitive defect report | Dev A |
