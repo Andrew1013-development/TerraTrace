@@ -64,26 +64,40 @@ test('placeName never shows "-0.00" (D8)', () => {
   expect(placeName({ kind: "point", lat: -0.006, lon: 0 }, [])).toBe("the area around -0.01, 0.00");
 });
 
-// Scene map (Dev C, with the user's go-ahead): the POWER grid cell a typed point's data comes from.
-import { powerCell } from "./index";
+// Scene map (Dev C, with the user's go-ahead): which region or country a typed point is in.
+import { countryAt, regionAt } from "./index";
 
-describe("powerCell", () => {
-  const merra = { source: "NASA POWER monthly (MERRA-2), API v2.10.0" };
-  const ceres = { source: "NASA POWER monthly (CERES SYN1deg), API v2.10.0" };
-
-  test("MERRA-2 cells are 0.5° by 0.625°, centred on the grid nearest the point", () => {
-    expect(powerCell(10.5, 106.7, merra)).toEqual([10.25, 106.5625, 10.75, 107.1875]);
-    expect(powerCell(-33.9, 151.2, merra)).toEqual([-34.25, 150.9375, -33.75, 151.5625]);
+describe("regionAt", () => {
+  test("finds the prepared region whose box holds the point", () => {
+    expect(regionAt(10, 105.5, sampleRegions)?.id).toBe("mekong-delta");
+    expect(regionAt(14, 0, sampleRegions)?.id).toBe("sahel");
   });
-
-  test("CERES SYN1deg cells are 1° by 1°, centred on half degrees", () => {
-    expect(powerCell(10.5, 106.7, ceres)).toEqual([10, 106, 11, 107]);
-    expect(powerCell(-0.2, -0.2, ceres)).toEqual([-1, -1, 0, 0]);
+  test("returns undefined outside every box", () => {
+    expect(regionAt(48.86, 2.35, sampleRegions)).toBeUndefined();
   });
-
-  test("cells never run past the poles", () => {
-    const [s, , n] = powerCell(90, 0, merra);
-    expect(n).toBe(90);
-    expect(s).toBe(89.75);
+  test("prefers the smallest box when boxes overlap", () => {
+    const big = { id: "big", name: "Big", bbox: [0, 100, 20, 120] as [number, number, number, number] };
+    expect(regionAt(10, 105.5, [big, ...sampleRegions])?.id).toBe("mekong-delta");
   });
+});
+
+describe("countryAt", () => {
+  const square = (name: string, w: number, s: number) => ({
+    type: "Feature" as const,
+    properties: { name },
+    geometry: { type: "Polygon" as const, coordinates: [[[w, s], [w, s + 10], [w + 10, s + 10], [w + 10, s], [w, s]]] },
+  });
+  const countries = { type: "FeatureCollection" as const, features: [square("Squareland", 0, 40), square("Otherland", 20, 40)] };
+
+  test("names the country a point is in", () => {
+    expect(countryAt(45, 5, countries)).toBe("Squareland");
+    expect(countryAt(45, 25, countries)).toBe("Otherland");
+  });
+  test("returns undefined at sea", () => {
+    expect(countryAt(0, -30, countries)).toBeUndefined();
+  });
+});
+
+test("placeName uses a point's name when it has one", () => {
+  expect(placeName({ kind: "point", lat: 48.86, lon: 2.35, name: "one spot in France" }, sampleRegions)).toBe("one spot in France");
 });

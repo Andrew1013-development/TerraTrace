@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { sampleCatalog, sampleLeads, sampleRegions } from '../fixtures'
 import type { Place, Variable } from '../types'
@@ -7,13 +7,30 @@ import { PlacePicker } from './PlacePicker'
 vi.mock('./starBurst', () => ({ starBurst: vi.fn() }))
 // The map is tested in WorldMap.test.tsx; here a stand-in reports what it was asked to show.
 vi.mock('./WorldMap', () => ({
-  WorldMap: (p: { highlight?: number[]; zoom?: boolean; label: string }) => (
-    <figure aria-label={p.label} data-highlight={p.highlight?.join(',') ?? ''} data-zoom={String(!!p.zoom)} />
+  WorldMap: (p: { highlight?: string; pin?: { lat: number; lon: number }; label: string }) => (
+    <figure aria-label={p.label} data-highlight={p.highlight ?? ''} data-pin={p.pin ? `${p.pin.lat},${p.pin.lon}` : ''} />
+  ),
+}))
+// One square "country" around Paris, for naming points outside every region.
+vi.mock('../data', () => ({
+  loadCountries: vi.fn(() =>
+    Promise.resolve({
+      type: 'FeatureCollection',
+      features: [
+        {
+          type: 'Feature',
+          properties: { name: 'France' },
+          geometry: { type: 'Polygon', coordinates: [[[-5, 42], [-5, 51], [8, 51], [8, 42], [-5, 42]]] },
+        },
+      ],
+    }),
   ),
 }))
 
 const precipitation = sampleCatalog[1] // sampleLeads has a precipitation lead for "sahel"
 const region = () => screen.getByRole('combobox', { name: 'Prepared region' })
+const latitude = () => screen.getByRole('textbox', { name: /Latitude/ })
+const longitude = () => screen.getByRole('textbox', { name: /Longitude/ })
 const map = () => document.querySelector('figure[data-highlight]')!
 const MESSAGE = 'Enter a latitude from -90 to 90 and a longitude from -180 to 180.'
 
@@ -32,29 +49,56 @@ test('choosing a region calls onPick with a region place', async () => {
   expect(onPick).toHaveBeenCalledWith({ kind: 'region', id: 'arctic-canada' })
 })
 
-test('valid typed coordinates call onPick with a point place', async () => {
+test('coordinate inputs are labelled in degrees', () => {
+  renderPicker()
+  expect(latitude()).toHaveAccessibleName(/^Latitude \(degrees\)\s*north \+, south −$/)
+  expect(longitude()).toHaveAccessibleName(/^Longitude \(degrees\)\s*east \+, west −$/)
+})
+
+test('a typed point inside a region picks that region, and the map shows the region and a pin', async () => {
   const { onPick, user } = renderPicker()
-  await user.type(screen.getByRole('textbox', { name: 'Latitude' }), '10,5')
-  await user.type(screen.getByRole('textbox', { name: 'Longitude' }), '106.7')
+  await user.type(latitude(), '10,5')
+  await user.type(longitude(), '106.7')
+  expect(map().getAttribute('data-highlight')).toBe('mekong-delta')
+  expect(map().getAttribute('data-pin')).toBe('10.5,106.7')
+  expect(screen.getByText('This point is inside Mekong Delta, so the case uses the data for Mekong Delta.')).toBeInTheDocument()
   await user.click(screen.getByRole('button', { name: 'Use these coordinates' }))
-  expect(onPick).toHaveBeenCalledWith({ kind: 'point', lat: 10.5, lon: 106.7 })
+  expect(onPick).toHaveBeenCalledWith({ kind: 'region', id: 'mekong-delta' })
+})
+
+test('a typed point outside every region uses live data, named by its country', async () => {
+  const { onPick, user } = renderPicker()
+  await user.type(latitude(), '48.86')
+  await user.type(longitude(), '2.35')
+  expect(map().getAttribute('data-highlight')).toBe('')
+  expect(map().getAttribute('data-pin')).toBe('48.86,2.35')
+  await waitFor(() => expect(screen.getByText(/live data for one spot in France/)).toBeInTheDocument())
+  await user.click(screen.getByRole('button', { name: 'Use these coordinates' }))
+  expect(onPick).toHaveBeenCalledWith({ kind: 'point', lat: 48.86, lon: 2.35, name: 'one spot in France' })
+})
+
+test('a point at sea is named as such', async () => {
+  const { onPick, user } = renderPicker()
+  await user.type(latitude(), '0')
+  await user.type(longitude(), '-30')
+  await user.click(screen.getByRole('button', { name: 'Use these coordinates' }))
+  await waitFor(() => expect(onPick).toHaveBeenCalledWith({ kind: 'point', lat: 0, lon: -30, name: 'one spot at sea' }))
 })
 
 test('invalid coordinates show the section 8 message and do not call onPick', async () => {
   const { onPick, user } = renderPicker()
-  await user.type(screen.getByRole('textbox', { name: 'Latitude' }), '91')
-  await user.type(screen.getByRole('textbox', { name: 'Longitude' }), 'abc')
+  await user.type(latitude(), '91')
+  await user.type(longitude(), 'abc')
   await user.click(screen.getByRole('button', { name: 'Use these coordinates' }))
-  const alert = screen.getByRole('alert')
-  expect(alert).toHaveTextContent(MESSAGE)
-  expect(screen.getByRole('textbox', { name: 'Latitude' })).toHaveAccessibleDescription(MESSAGE)
-  expect(screen.getByRole('textbox', { name: 'Longitude' })).toHaveAccessibleDescription(MESSAGE)
+  expect(screen.getByRole('alert')).toHaveTextContent(MESSAGE)
+  expect(latitude()).toHaveAccessibleDescription(MESSAGE)
+  expect(longitude()).toHaveAccessibleDescription(MESSAGE)
   expect(onPick).not.toHaveBeenCalled()
 })
 
 test('a regions-only variable hides the coordinate inputs and says why', () => {
   renderPicker({ ...precipitation, powerParameter: null })
-  expect(screen.queryByRole('textbox', { name: 'Latitude' })).toBeNull()
+  expect(screen.queryByRole('textbox', { name: /Latitude/ })).toBeNull()
   expect(screen.getByText('This measurement is only available for prepared regions.')).toBeInTheDocument()
 })
 
@@ -75,22 +119,13 @@ test('a region with no leads shows no leads section', async () => {
   expect(screen.queryByRole('region', { name: 'Leads' })).toBeNull()
 })
 
-test('the map highlights the chosen region, world view', async () => {
+test('the map highlights the region chosen from the list, with no pin', async () => {
   const { user } = renderPicker()
   expect(map().getAttribute('data-highlight')).toBe('')
   await user.selectOptions(region(), 'Sahel')
-  expect(map().getAttribute('data-highlight')).toBe(sampleRegions[0].bbox.join(','))
-  expect(map().getAttribute('data-zoom')).toBe('false')
-  expect(screen.getByText('Highlighted: Sahel, an average of 9 points across this box.')).toBeInTheDocument()
-})
-
-test("typed coordinates zoom the map to the point's POWER grid cell", async () => {
-  const { user } = renderPicker()
-  await user.type(screen.getByRole('textbox', { name: 'Latitude' }), '10.5')
-  await user.type(screen.getByRole('textbox', { name: 'Longitude' }), '106.7')
-  expect(map().getAttribute('data-highlight')).toBe('10.25,106.5625,10.75,107.1875')
-  expect(map().getAttribute('data-zoom')).toBe('true')
-  expect(screen.getByText(/covers this grid cell \(0.5° by 0.625°\)/)).toBeInTheDocument()
+  expect(map().getAttribute('data-highlight')).toBe('sahel')
+  expect(map().getAttribute('data-pin')).toBe('')
+  expect(screen.getByText(/Highlighted: Sahel\. The dashed box is the area its 9 sampled points average over\./)).toBeInTheDocument()
 })
 
 test('a place already chosen comes back selected', () => {

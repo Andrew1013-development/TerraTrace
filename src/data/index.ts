@@ -47,6 +47,21 @@ export function loadLand(): Promise<Land> {
   return loadFile("land.json");
 }
 
+// Each region's real outline trimmed to its box (scripts/make_map_shapes.py), for the Scene map.
+export type RegionShapes = Record<string, { type: "MultiPolygon"; coordinates: number[][][][]; outline: string }>;
+export function loadRegionShapes(): Promise<RegionShapes> {
+  return loadFile("region-shapes.json");
+}
+
+// Country outlines and names, for naming a typed point outside every region.
+export type Countries = {
+  type: "FeatureCollection";
+  features: { type: "Feature"; properties: { name: string }; geometry: { type: string; coordinates: unknown } }[];
+};
+export function loadCountries(): Promise<Countries> {
+  return loadFile("countries.json");
+}
+
 const POWER_URL = "https://power.larc.nasa.gov/api/temporal/monthly/point";
 const END_YEAR = 2025;
 

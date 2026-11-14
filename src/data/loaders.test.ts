@@ -67,3 +67,23 @@ test("the committed land.json is a FeatureCollection of polygons", async () => {
   expect(land.features.length).toBeGreaterThan(100);
   expect(land.features.every((f) => ["Polygon", "MultiPolygon"].includes(f.geometry.type))).toBe(true);
 });
+
+test.each([
+  ["loadRegionShapes", "region-shapes.json"],
+  ["loadCountries", "countries.json"],
+] as const)("%s fetches data/%s under BASE_URL, once", async (name, file) => {
+  fetchMock.mockResolvedValue(json({ ok: true }));
+  await data[name]();
+  await data[name]();
+  expect(fetchMock).toHaveBeenCalledTimes(1);
+  expect(fetchMock).toHaveBeenCalledWith(`${import.meta.env.BASE_URL}data/${file}`);
+});
+
+test("the committed region-shapes.json has a shape for every region", async () => {
+  const shapes = (await import("../../public/data/region-shapes.json")).default as Record<string, { type: string; coordinates: unknown[] }>;
+  const regions = (await import("../../public/data/regions.json")).default as { id: string }[];
+  for (const r of regions) {
+    expect(shapes[r.id]?.type, r.id).toBe("MultiPolygon");
+    expect(shapes[r.id].coordinates.length, r.id).toBeGreaterThan(0);
+  }
+});

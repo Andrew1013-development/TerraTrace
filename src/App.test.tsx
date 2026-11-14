@@ -25,6 +25,8 @@ vi.mock('./data', async () => {
     loadRegions: vi.fn(() => Promise.resolve(f.sampleRegions)),
     loadLeads: vi.fn(() => Promise.resolve(f.sampleLeads)),
     loadLand: vi.fn(() => Promise.resolve({ type: 'FeatureCollection', features: [] })),
+    loadRegionShapes: vi.fn(() => Promise.resolve({})),
+    loadCountries: vi.fn(() => Promise.resolve({ type: 'FeatureCollection', features: [] })),
     demoCases: [{ id: 'demo', title: 'Synthetic demo', variableId: 'T2M', place: { kind: 'region', id: 'sahel' } }],
   }
 })

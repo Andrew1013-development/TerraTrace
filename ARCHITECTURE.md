@@ -67,7 +67,7 @@ Case File is a static web app: files on GitHub Pages, no server of ours, no acco
 ```ts
 export type Place =
   | { kind: "region"; id: string }
-  | { kind: "point"; lat: number; lon: number };
+  | { kind: "point"; lat: number; lon: number; name?: string }; // name: "one spot in France", shown instead of the numbers
 
 export type Variable = {
   id: string;                    // equals the POWER parameter name when there is one
@@ -127,6 +127,8 @@ export function loadLeads(): Promise<Lead[]>;
 export function getSeries(variable: Variable, place: Place): Promise<Series>;
 export const demoCases: DemoCase[]; // exactly 2
 export function loadLand(): Promise<Land>; // Natural Earth 1:110m land outlines, for the Scene map
+export function loadRegionShapes(): Promise<RegionShapes>; // each region's real outline, clipped to its sampled box
+export function loadCountries(): Promise<Countries>; // Natural Earth 1:110m countries, to name a typed point
 ```
 
 ### 4.3 Clues (`src/clues/index.ts`, Dev A)
@@ -146,8 +148,10 @@ export function questionText(question: Question, options: Question["options"]): 
 export function parsePoint(lat: string, lon: string): Place | null;
 export function placeName(place: Place, regions: Region[]): string;
 export function leadsFor(leads: Lead[], regionId: string, variableId: string): Lead[];
-// The POWER grid cell a point's data comes from, [south, west, north, east]: 0.5° × 0.625° (MERRA-2) or 1° (CERES SYN1deg).
-export function powerCell(lat: number, lon: number, variable: { source: string }): [number, number, number, number];
+// The region whose box contains the point (the smallest, if boxes overlap); a typed point inside one uses that region's data.
+export function regionAt(lat: number, lon: number, regions: Region[]): Region | undefined;
+// The country containing the point, or undefined at sea; names a point outside every region.
+export function countryAt(lat: number, lon: number, countries: Countries): string | undefined;
 ```
 
 `placeName` gives a region's `name`, or for a point "the area around {lat}, {lon}" with 2 decimals, so it reads correctly after "in". A POWER point is a grid cell about 50 km across.
@@ -361,7 +365,7 @@ Each screen has one `h1`, moves focus to it on entry, and works by keyboard at 3
 | Component | Props | Shows |
 |---|---|---|
 | `Clues` | `catalog`, `demoCases`, `onVariable(v)`, `onDemo(c)` | The current question with its live options as buttons; the suspect list with each definition and a count ("4 suspects left"); when one suspect is left, that suspect with its definition and a "Continue" button; when `nextQuestion` is `null` and several remain, the suspects as buttons; two "Open a solved case" buttons |
-| `PlacePicker` | `variable`, `regions`, `leads`, `place?`, `onPick(place)` | A world map highlighting the chosen region, or zoomed to a typed point's POWER grid cell; the region list; labeled latitude and longitude inputs (hidden when `powerParameter` is `null`); the leads for the highlighted region and this variable, each with a source link; no leads section when there are none |
+| `PlacePicker` | `variable`, `regions`, `leads`, `place?`, `onPick(place)` | A coloured world map with every region's sampled box dashed and the chosen region's real outline highlighted; a pin for a typed point. A typed point inside a region picks that region; outside every region it is a point named by its country ("one spot in France", or "one spot at sea"); the region list; labeled latitude and longitude inputs (hidden when `powerParameter` is `null`); the leads for the highlighted region and this variable, each with a source link; no leads section when there are none |
 | `CaseBrief` | `variable`, `placeName`, `hunch?`, `onConfirm(hunch)`, `onChange()` | "You want to know whether {name} in {place} has changed since {startYear}. Is that right?"; a radio group "Your hunch": rising, falling, no change; "Yes, show me the evidence" disabled until a hunch is chosen; "Change" |
 | `Evidence` | `load` (the `CaseState` load: status, `series`, `error`), `deseasonalized`, `onToggle()`, `onNext()` | `Chart`; a labeled checkbox "Remove the seasonal cycle", on by default; rate, "p-value (below 0.05 counts as significant)" and interval as text, in three stat tiles; the source line; a loading and an error state |
 | `Chart` | `series`, `deseasonalized` | An Observable Plot line of monthly values (anomalies when on) with a straight-line fit, axis units, an accessible label and the caption "Line: straight-line fit to the points shown." The line is for illustration; the reported rate is Sen's slope |
