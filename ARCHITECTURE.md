@@ -313,7 +313,7 @@ Significance level 0.05. "Excludes 0" means both ends of `ci95` are above 0, or 
 
 - `narrow` keeps the variables that have at least one of the option's tags.
 - `liveOptions` returns the options that keep at least one suspect.
-- `nextQuestion` considers unasked questions that have at least 2 live options and where some option removes a suspect. It returns the one whose largest group after any answer is smallest. Ties go to the earlier question. It returns `null` when one suspect remains or no question qualifies; the screen then lists the remaining suspects to choose from.
+- `nextQuestion` considers unasked questions that have at least 2 live options, where some option removes a suspect, and where every suspect matches at least one live option. It returns the one whose largest group after any answer is smallest. Ties go to the earlier question. It returns `null` when one suspect remains or no question qualifies; the screen then lists the remaining suspects to choose from.
 
 Questions are plain language and each option carries tags, for example "Is it about air, water, land or living things?" with tags `air`, `water`, `land`, `life`. Every variable must have at least one tag from the first question.
 
