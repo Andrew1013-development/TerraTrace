@@ -105,7 +105,7 @@ test("a region place fetches data/series/{variableId}/{regionId}.json under BASE
   const file = { variableId: "T2M", placeId: "sahel", unit: "°C", source: "File source", dates: ["1981-01"], values: [24.1] };
   fetchMock.mockResolvedValue(json(file));
   const s = await data.getSeries(t2m, { kind: "region", id: "sahel" });
-  expect(fetchMock).toHaveBeenCalledWith(`${import.meta.env.BASE_URL}data/series/T2M/sahel.json`);
+  expect(fetchMock).toHaveBeenCalledWith(`${import.meta.env.BASE_URL}data/series/T2M/sahel.json`, expect.anything());
   expect(s).toEqual(file);
 
   fetchMock.mockResolvedValue(json({}, 404));
@@ -124,4 +124,10 @@ test("placeId is the region id, or point:{lat},{lon} with 2 decimals", async () 
 
   fetchMock.mockResolvedValue(json({ variableId: "T2M", placeId: "sahel", unit: "°C", source: "s", dates: [], values: [] }));
   expect((await data.getSeries(t2m, { kind: "region", id: "sahel" })).placeId).toBe("sahel");
+});
+
+test("every request carries an abort signal, and an aborted request is a network error (D2)", async () => {
+  fetchMock.mockRejectedValue(new DOMException("The operation timed out.", "TimeoutError"));
+  await expect(data.getSeries(t2m, point)).rejects.toMatchObject({ kind: "network" });
+  expect(fetchMock.mock.calls[0][1]?.signal).toBeInstanceOf(AbortSignal);
 });

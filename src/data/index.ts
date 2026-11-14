@@ -51,10 +51,13 @@ type PowerResponse = {
   properties?: { parameter?: Record<string, Record<string, unknown>> };
 };
 
+const FETCH_TIMEOUT_MS = 30_000;
+
 async function fetchJson(url: string): Promise<unknown> {
   let res: Response;
   try {
-    res = await fetch(url);
+    // A stalled connection would otherwise leave the screen loading forever (D2).
+    res = await fetch(url, { signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) });
   } catch {
     throw new DataError("network");
   }
