@@ -131,3 +131,19 @@ test("every request carries an abort signal, and an aborted request is a network
   await expect(data.getSeries(t2m, point)).rejects.toMatchObject({ kind: "network" });
   expect(fetchMock.mock.calls[0][1]?.signal).toBeInstanceOf(AbortSignal);
 });
+
+test("a region file that is not a series is unavailable, not passed on (D7)", async () => {
+  fetchMock.mockResolvedValueOnce(json({}));
+  await expect(data.getSeries(t2m, { kind: "region", id: "sahel" })).rejects.toMatchObject({ kind: "unavailable" });
+  fetchMock.mockResolvedValueOnce(json({ dates: ["2000-01", "2000-02"], values: [1] }));
+  await expect(data.getSeries(t2m, { kind: "region", id: "sahel" })).rejects.toMatchObject({ kind: "unavailable" });
+});
+
+test("a coordinate just below zero rounds to 0.00, not -0.00 (D8)", async () => {
+  const a = await data.getSeries(t2m, { kind: "point", lat: -0.001, lon: -0.004 });
+  const b = await data.getSeries(t2m, { kind: "point", lat: 0, lon: 0 });
+  expect(a.placeId).toBe("point:0.00,0.00");
+  expect(a).toBe(b);
+  expect(String(fetchMock.mock.calls[0][0])).toContain("longitude=0.00&latitude=0.00");
+  expect(fetchMock).toHaveBeenCalledTimes(1);
+});

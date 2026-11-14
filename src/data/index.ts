@@ -93,15 +93,25 @@ async function loadPoint(variable: Variable, lat: string, lon: string, placeId: 
   };
 }
 
+// 2 decimals; "-0.00" becomes "0.00", so a point on the equator has one id and one request (D8).
+const coord = (x: number) => x.toFixed(2).replace(/^-(0\.00)$/, "$1");
+
+// Our own files are trusted for content, but a corrupted deploy must not reach analyze (D7).
+async function loadRegion(variable: Variable, regionId: string): Promise<Series> {
+  const s = (await fetchJson(staticFile(`series/${variable.id}/${regionId}.json`))) as Partial<Series> | null;
+  if (!Array.isArray(s?.dates) || !Array.isArray(s.values) || s.dates.length !== s.values.length) {
+    throw new DataError("unavailable");
+  }
+  return s as Series;
+}
+
 export function getSeries(variable: Variable, place: Place): Promise<Series> {
   // Round once, so the request and the cache key always agree.
-  const lat = place.kind === "point" ? place.lat.toFixed(2) : "";
-  const lon = place.kind === "point" ? place.lon.toFixed(2) : "";
+  const lat = place.kind === "point" ? coord(place.lat) : "";
+  const lon = place.kind === "point" ? coord(place.lon) : "";
   const placeId = place.kind === "region" ? place.id : `point:${lat},${lon}`;
   return memo(`series|${variable.id}|${placeId}`, () =>
-    place.kind === "region"
-      ? (fetchJson(staticFile(`series/${variable.id}/${place.id}.json`)) as Promise<Series>)
-      : loadPoint(variable, lat, lon, placeId),
+    place.kind === "region" ? loadRegion(variable, place.id) : loadPoint(variable, lat, lon, placeId),
   );
 }
 
