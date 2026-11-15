@@ -12,7 +12,7 @@ A guided web app for the NASA Space Apps Challenge 2026, challenge "Be An Earth 
 
 1. **Is there a steady upward or downward drift?** The Mann-Kendall test compares every month with every later month and counts how often the later one is higher rather than lower. Its p-value says how surprising that count would be if nothing were changing; below 0.05 counts as significant.
 2. **How fast?** Sen's slope is the middle value of the rates of change between every pair of months. One odd year barely moves it. The app reports it per decade.
-3. **How sure are we of that rate?** A straight-line fit gives a 95% interval for the rate. If the interval includes zero, "no change" is still plausible.
+3. **How sure are we of that rate?** A straight-line fit through the months gives a 95% interval for its slope. If the interval includes zero, "no change" is still plausible. The interval belongs to the fitted line, so when a few extreme months pull that line, Sen's rate can fall outside it.
 
 **The seasonal cycle.** Summer and winter differ far more than most long-term changes, which can hide a trend. With "Remove the seasonal cycle" on (the default), the test compares each month only with the same month in other years (the seasonal Mann-Kendall test), and the rate and interval are worked out from each month's difference from its usual value.
 

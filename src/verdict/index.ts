@@ -25,6 +25,10 @@ export function formatNumber(x: number, signed = false): string {
 // A rate in "%" is a change in percentage points; "0.76 % per decade" reads as a relative change.
 export const rateUnit = (unit: string) => (unit === "%" ? "percentage points" : unit);
 
+// Shown instead of a verdict when isConstant: "no significant trend … ups and downs" would describe variation that isn't there (issue 57).
+export const constantText = (value: number, unit: string) =>
+  `Every month in this record is ${formatNumber(value)} ${unit}, so there is no trend to test.`;
+
 const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
 // years (issue 46): when given, the sentence begins "From {start} to {end}, "; without it, nothing changes.

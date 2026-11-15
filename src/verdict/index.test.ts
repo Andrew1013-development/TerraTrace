@@ -1,7 +1,7 @@
 import { describe, expect, test } from "vitest";
 import { sampleCatalog } from "../fixtures";
 import type { TrendResult, Verdict } from "../types";
-import { formatNumber, getVerdict, hunchLine, oppositeDirections, rateUnit } from "./index";
+import { constantText, formatNumber, getVerdict, hunchLine, oppositeDirections, rateUnit } from "./index";
 
 const T2M = sampleCatalog.find((v) => v.id === "T2M")!; // name "air temperature", unit "°C"
 const PLACE = "Sahel";
@@ -211,4 +211,9 @@ test("a rate of a percent variable is given in percentage points (integration 9)
   expect(rateUnit("%")).toBe("percentage points");
   expect(rateUnit("°C")).toBe("°C");
   expect(rateUnit("mm/day")).toBe("mm/day");
+});
+
+test("constantText says there is nothing to test, with the value and its unit (issue 57)", () => {
+  expect(constantText(0, "mm/day")).toBe("Every month in this record is 0 mm/day, so there is no trend to test.");
+  expect(constantText(-1.234, "°C")).toBe("Every month in this record is −1.2 °C, so there is no trend to test.");
 });

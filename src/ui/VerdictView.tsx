@@ -1,9 +1,9 @@
 import { useMemo, useRef, useState, type ReactNode } from 'react'
 import { getSeries, type DataError } from '../data'
 import { listName } from '../place'
-import { analyze, countValid, slicePeriod, validPeriod } from '../stats'
+import { analyze, countValid, isConstant, slicePeriod, validPeriod } from '../stats'
 import type { Hunch, Region, Series, Variable, Verdict } from '../types'
-import { getVerdict, hunchLine, oppositeDirections } from '../verdict'
+import { constantText, getVerdict, hunchLine, oppositeDirections } from '../verdict'
 import { ArrowDownIcon, ArrowUpIcon, FlatIcon, QuestionIcon } from './icons'
 import { PrimaryButton } from './PrimaryButton'
 import { ScreenHeading } from './ScreenHeading'
@@ -43,11 +43,11 @@ type Witness =
 
 type Years = [number, number] | undefined
 
-// The verdict for one series, or null when it has too few months. With years, the sentence names them.
+// The verdict for one series, or null when it has too few months or never changes. With years, the sentence names them.
 function useVerdict(series: Series | undefined, deseasonalized: boolean, variable: Variable, place: string, years: Years) {
   const [from, to] = years ?? []
   return useMemo(() => {
-    const result = series && analyze(series, deseasonalized)
+    const result = series && !isConstant(series) && analyze(series, deseasonalized)
     return result ? getVerdict(result, variable, place, from === undefined || to === undefined ? undefined : [from, to]) : null
   }, [series, deseasonalized, variable, place, from, to])
 }
@@ -176,7 +176,9 @@ function VerdictCard({ variable, place, years, series, verdict, children }: Verd
         {variable.name} · {place}
         {years && ` · ${years[0]} to ${years[1]}`}
       </p>
-      {verdict ? (
+      {isConstant(series) ? (
+        <p className="notice">{constantText(series.values.find((v) => v !== null)!, series.unit)}</p>
+      ) : verdict ? (
         <>
           <p className="kind">
             {KIND_ICON[verdict.kind]}

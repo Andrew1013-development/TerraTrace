@@ -10,7 +10,7 @@ vi.mock('../stats', async () => ({
   countValid: vi.fn(),
   deseasonalize: vi.fn(() => []),
   // The real period functions (issue 46); only analyze and countValid are stubbed.
-  ...(({ selectableYears, validPeriod, slicePeriod }) => ({ selectableYears, validPeriod, slicePeriod }))(
+  ...(({ selectableYears, validPeriod, slicePeriod, isConstant }) => ({ selectableYears, validPeriod, slicePeriod, isConstant }))(
     await vi.importActual<typeof import('../stats')>('../stats'),
   ),
 }))
@@ -56,7 +56,7 @@ test('rate, p-value and interval are a labeled list in one group', () => {
   expect(within(group).getAllByRole('term').map((t) => t.textContent)).toEqual([
     'Rate per decade',
     'p-value (below 0.05 counts as significant)',
-    '95% interval',
+    '95% interval (straight-line fit)',
   ])
   expect(within(group).getByText('+0.24 °C')).toBeInTheDocument()
   // Same formatter as the verdict: 2 significant figures, so 0.3 reads 0.30 (D16).
@@ -184,4 +184,12 @@ test('a chosen period cuts the chart and the numbers to the same months, and Ful
   expect(analysed.dates).toHaveLength(11 * 12)
   await userEvent.click(screen.getByRole('button', { name: 'Full record' }))
   expect(props.onPeriod).toHaveBeenCalledWith(null)
+})
+
+test('a record that never changes says there is nothing to test, instead of the numbers (issue 57)', () => {
+  vi.mocked(analyze).mockReturnValue(sampleResult)
+  const zeros = { ...sampleSeries, unit: 'mm/day', values: sampleSeries.values.map(() => 0) }
+  renderEvidence({ load: { status: 'ready', series: zeros } })
+  expect(screen.getByText('Every month in this record is 0 mm/day, so there is no trend to test.')).toBeInTheDocument()
+  expect(screen.queryByRole('group', { name: 'Trend statistics' })).toBeNull()
 })
