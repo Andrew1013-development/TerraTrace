@@ -69,7 +69,7 @@ Another agent, Codex (`AGENTS.md`), reviews the back-end internals: data retriev
 
 1. **Read the code against the spec.** This finds most faults.
 2. **Run the tests:** `npx vitest run` and `npm run build`. `src/data/pipeline.test.ts` already proves the back end's half of the contract on the real data files. Your job is the half it can't see: what the screens do with those results.
-3. **Walk the live app:** https://andrew1013-development.github.io/nasa-space-apps-challenge-2026/
+3. **Walk the live app:** https://andrew1013-development.github.io/TerraTrace/
    - both solved cases, with the toggle in both states
    - one case built from the questions
    - one prepared region

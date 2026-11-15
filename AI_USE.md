@@ -53,3 +53,4 @@ One line per meaningful use of AI tools. No AI model runs in the app.
 | Globe gestures | Dev C | Claude Code | Planned the mouse, touchpad and touch-screen gestures with Dev C, built the invisible ring that takes them, the wheel handling (wheelKind, ringRadius) and Safari pinch, with their tests | Dev C |
 | Fixed side board | Dev C | Claude Code | Made the tablet and desktop layout a window-height frame where only the main panel scrolls, with a compact side board for short and narrow screens, and measured it at nine screen sizes | Dev C |
 | Rename to TerraTrace | Dev C | Claude Code | Suggested names with the team, then replaced the placeholder name "Case File" with TerraTrace in the app, the package name, its setup test and every doc | Dev C |
+| Pages base after the rename | Dev A | Claude Code | Found the blank live site after the repo rename to TerraTrace, and changed the Vite base and the live link in GEMINI.md to the new path | Dev A, Dev C |
