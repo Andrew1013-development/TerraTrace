@@ -2,7 +2,7 @@
 
 A guided web app for the NASA Space Apps Challenge 2026, challenge "Be An Earth System Trend Detective!". It takes a student from a question about the Earth to an honest, plain-language verdict on whether a measured variable is changing in a chosen place.
 
-**Live app:** [https://andrew1013-development.github.io/nasa-space-apps-challenge-2026/](https://andrew1013-development.github.io/TerraTrace/)
+**Live app:** [https://andrew1013-development.github.io/TerraTrace/](https://andrew1013-development.github.io/TerraTrace/)
 
 ## How a verdict is reached
 
