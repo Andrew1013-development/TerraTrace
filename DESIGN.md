@@ -28,9 +28,6 @@ A guided web app that takes a student from a question about the Earth to a stati
 
 **Settled:** the deadline is 23:59 ICT on November 15 (HCMC online handbook). The team reports that planning beforehand is allowed.
 
-**Open question for the organizers**
-- How should the team describe AI help with choosing the challenge and shaping the idea, given the SI rule above?
-
 ## 3. Scope
 
 **In**
@@ -271,14 +268,3 @@ Owned by the 3 non-dev teammates. Developers supply the live link, facts and num
 | H13 | Record the video on the frozen build |
 | H14 | Submit a complete first version, then reopen it signed out to check every link |
 | H15-H16 | Final fixes and resubmit, well before 23:59 ICT |
-
-## 8. Unverified
-
-- The guides state no weights for the five judging criteria; each is scored 1 to 5.
-- Whether `github.io` pages pass the judges' web filter is unchecked. The guide suggests a FortiGuard classification request for new websites.
-- AI helped rank the challenges and propose the base concept, which may conflict with the SI rule in section 2. The team must describe this truthfully and should ask the organizers.
-- Rubric scores behind choosing TerraTrace are judgment. Its lead over Slip Calendar is 3 points.
-- Giovanni, AppEEARS and Hydrology Time Series access is untested. POWER is not on the official resource list.
-- Whether Observable Plot renders in the test environment is unverified.
-- Regional means come from 9 sampled points per region, which is coarse. POWER coverage near the poles is unverified.
-- Hour estimates are not measured.
