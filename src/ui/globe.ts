@@ -53,3 +53,23 @@ export function fitView(rings: number[][][], tanHalf: number, center?: { lat: nu
   // A point at that angle sits sin θ off the axis and cos θ along it; keep sin θ / (d − cos θ) ≤ tanHalf.
   return { ...(center ?? { lat: mid(1), lon: mid(0) }), distance: Math.cos(theta) + Math.sin(theta) / tanHalf }
 }
+
+// The invisible ring that takes the globe's gestures: the globe's outline on screen plus a margin, in CSS px.
+// The camera looks at the centre, so the outline is a circle in the middle of the box. From distance d the
+// globe (radius 1) spans an angle asin(1/d) from the centre; a vertical view of fovDeg fills heightPx.
+export function ringRadius(distance: number, fovDeg: number, heightPx: number, margin = 15): number {
+  const half = (fovDeg / 2) * (Math.PI / 180)
+  return ((heightPx / 2) * Math.tan(Math.asin(1 / distance))) / Math.tan(half) + margin
+}
+
+// Browsers report a mouse wheel and a touchpad two-finger slide as the same wheel event, so this guesses from
+// its numbers: Firefox counts a mouse wheel in lines; only fingers move sideways; a mouse notch is a big step
+// (about 100 px, more with display scaling) or a whole 120 in wheelDeltaY; a touchpad starts with small steps.
+// shortcut: a guess, wrong for smooth-scrolling mice and the Magic Mouse (they act like a touchpad) and for a
+// touchpad flick that starts with a big step; the +/− buttons always zoom.
+export function wheelKind(e: { deltaX: number; deltaY: number; deltaMode: number; wheelDeltaY?: number }): 'mouse' | 'touchpad' {
+  if (e.deltaMode !== 0) return 'mouse'
+  if (e.deltaX !== 0) return 'touchpad'
+  if (Math.abs(e.deltaY) >= 50) return 'mouse'
+  return e.wheelDeltaY && e.wheelDeltaY % 120 === 0 ? 'mouse' : 'touchpad'
+}

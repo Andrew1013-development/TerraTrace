@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react'
 import { sampleRegions } from '../fixtures'
-import { densify, fitView, toLatLon, toVector } from './globe'
+import { densify, fitView, ringRadius, toLatLon, toVector, wheelKind } from './globe'
 import { WorldMap } from './WorldMap'
 
 vi.mock('../data', () => ({ loadRegionShapes: vi.fn(() => Promise.resolve({})) }))
@@ -52,4 +52,22 @@ test('fitView can centre on a given point instead, such as a pin', () => {
   const v = fitView([[[104, 9], [107, 11]]], 0.2, { lat: 10.2, lon: 105.8 })
   expect(v.lat).toBeCloseTo(10.2, 6)
   expect(v.lon).toBeCloseTo(105.8, 6)
+})
+
+test('ringRadius is the globe outline on screen plus a margin, and grows as the camera comes closer', () => {
+  // From distance 4.3 with a 32° view in a 440 px box, the globe is about 167 px across its radius.
+  const far = ringRadius(4.3, 32, 440)
+  expect(far).toBeCloseTo((220 * Math.tan(Math.asin(1 / 4.3))) / Math.tan((16 * Math.PI) / 180) + 15, 6)
+  expect(ringRadius(1.3, 32, 440)).toBeGreaterThan(far)
+  expect(ringRadius(4.3, 32, 440, 0)).toBeCloseTo(far - 15, 6)
+})
+
+test('wheelKind tells a mouse wheel from a touchpad slide by the event numbers', () => {
+  expect(wheelKind({ deltaX: 0, deltaY: 3, deltaMode: 1 })).toBe('mouse') // Firefox mouse: lines
+  expect(wheelKind({ deltaX: 0, deltaY: 100, deltaMode: 0, wheelDeltaY: -120 })).toBe('mouse') // Chrome mouse: notches of 120
+  expect(wheelKind({ deltaX: 0, deltaY: 125, deltaMode: 0 })).toBe('mouse') // a notch at 125% scaling, no wheelDeltaY
+  expect(wheelKind({ deltaX: 0, deltaY: 125, deltaMode: 0, wheelDeltaY: -150 })).toBe('mouse') // 125% scaling: not a multiple of 120
+  expect(wheelKind({ deltaX: 4, deltaY: 1, deltaMode: 0 })).toBe('touchpad') // sideways: fingers
+  expect(wheelKind({ deltaX: 0, deltaY: 7.5, deltaMode: 0, wheelDeltaY: -22 })).toBe('touchpad') // small, fractional
+  expect(wheelKind({ deltaX: 0, deltaY: 18, deltaMode: 0 })).toBe('touchpad')
 })
