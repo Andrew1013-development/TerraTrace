@@ -263,3 +263,30 @@ describe("isConstant", () => {
     expect(isConstant(makeSeries([null, null]))).toBe(false);
   });
 });
+
+// The median of the pairwise slopes is found without sorting them all (speed, 540 months = 145,530 slopes).
+// It must give exactly what a full sort gives, for odd and even slope counts, ties and constant runs.
+describe("senSlopePerMonth matches a full-sort median exactly", () => {
+  const reference = (t: number[], y: number[]) => {
+    const s: number[] = [];
+    for (let i = 0; i < y.length; i++) for (let j = i + 1; j < y.length; j++) s.push((y[j] - y[i]) / (t[j] - t[i]));
+    s.sort((a, b) => a - b);
+    const m = Math.floor(s.length / 2);
+    return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
+  };
+  // Deterministic values with repeats: rounded to 1 decimal, so many slopes tie.
+  const series = (n: number, seed: number) =>
+    Array.from({ length: n }, (_, i) => Math.round((Math.sin(i * 1.7 + seed) * 5 + ((i * 7919 + seed) % 11) / 3) * 10) / 10);
+
+  test.each([2, 3, 4, 5, 7, 12, 25, 120, 121, 240])("n = %i", (n) => {
+    const t = Array.from({ length: n }, (_, i) => i * 1.5);
+    for (const seed of [0, 1, 2]) {
+      const y = series(n, seed);
+      expect(senSlopePerMonth(t, y)).toBe(reference(t, y));
+    }
+  });
+  test("a constant series and a single point", () => {
+    expect(senSlopePerMonth([0, 1, 2, 3], [4, 4, 4, 4])).toBe(0);
+    expect(senSlopePerMonth([0], [4])).toBe(0);
+  });
+});
