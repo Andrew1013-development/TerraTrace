@@ -2,8 +2,8 @@ import { lazy, Suspense, useMemo } from 'react'
 import type { CaseState } from '../App'
 import { RulerIcon, ScaleIcon, SpeedIcon } from './icons'
 import { PrimaryButton } from './PrimaryButton'
-import { analyze, countValid, selectableYears, slicePeriod, validPeriod } from '../stats'
-import { formatNumber, rateUnit } from '../verdict'
+import { analyze, countValid, isConstant, selectableYears, slicePeriod, validPeriod } from '../stats'
+import { constantText, formatNumber, rateUnit } from '../verdict'
 import { ScreenHeading } from './ScreenHeading'
 
 // Loaded only on this step, so the charting library stays out of the first page load.
@@ -30,6 +30,8 @@ export function Evidence({ load, deseasonalized, period, onToggle, onPeriod, onN
   // The chart, its straight-line fit and the numbers all use the same months: the chosen years, or the full record.
   const shown = useMemo(() => (series && period ? slicePeriod(series, period.start, period.end) : series), [series, period])
   const result = useMemo(() => (shown ? analyze(shown, deseasonalized) : null), [shown, deseasonalized])
+  // A record that never changes has no trend to test; its numbers (p = 1, interval 0 to 0) are left out.
+  const constantValue = shown && isConstant(shown) ? shown.values.find((v) => v !== null) : undefined
   const years = useMemo(() => (series ? selectableYears(series) : []), [series])
   const start = period?.start ?? years[0]
   const end = period?.end ?? years[years.length - 1]
@@ -67,7 +69,7 @@ export function Evidence({ load, deseasonalized, period, onToggle, onPeriod, onN
                 </figure>
               }
             >
-              <Chart series={shown} deseasonalized={deseasonalized} fit={result !== null}>
+              <Chart series={shown} deseasonalized={deseasonalized} fit={result !== null && constantValue === undefined}>
                 {toggle}
               </Chart>
             </Suspense>
@@ -105,7 +107,9 @@ export function Evidence({ load, deseasonalized, period, onToggle, onPeriod, onN
                 </fieldset>
               )}
 
-              {result ? (
+              {constantValue !== undefined && constantValue !== null ? (
+                <p className="notice">{constantText(constantValue, series.unit)}</p>
+              ) : result ? (
                 <dl className="stat-list" role="group" aria-label="Trend statistics">
                   <div className="stat">
                     <dt>
@@ -130,7 +134,8 @@ export function Evidence({ load, deseasonalized, period, onToggle, onPeriod, onN
                   <div className="stat">
                     <dt>
                       <RulerIcon size={20} />
-                      95% interval
+                      {/* The fit's interval: a few extreme months can pull the line, so Sen's rate may fall outside it (issue 57). */}
+                      95% interval (straight-line fit)
                     </dt>
                     <dd>
                       <span className="underline underline-red">

@@ -18,6 +18,13 @@ export function countValid(series: Series): number {
   return series.values.filter((v) => v !== null).length;
 }
 
+// True when at least one month has a value and every valued month has the same one (snowfall in the Sahel is 0 in
+// every month): there are no ups and downs, so there is nothing to test (issue 57).
+export function isConstant(series: Series): boolean {
+  const valued = series.values.filter((v) => v !== null);
+  return valued.length > 0 && valued.every((v) => v === valued[0]);
+}
+
 export function deseasonalize(series: Series): (number | null)[] {
   const sums = Array(12).fill(0);
   const counts = Array(12).fill(0);

@@ -11,7 +11,7 @@ vi.mock('../stats', async () => ({
   analyze: vi.fn(),
   countValid: vi.fn(),
   // The real period functions (issue 46); only analyze and countValid are stubbed.
-  ...(({ selectableYears, validPeriod, slicePeriod }) => ({ selectableYears, validPeriod, slicePeriod }))(
+  ...(({ selectableYears, validPeriod, slicePeriod, isConstant }) => ({ selectableYears, validPeriod, slicePeriod, isConstant }))(
     await vi.importActual<typeof import('../stats')>('../stats'),
   ),
 }))
@@ -219,4 +219,15 @@ test('a second witness whose record cannot cover the chosen years shows the not-
   const cards = await screen.findAllByRole('article')
   expect(cards).toHaveLength(3)
   expect(cards[2]).toHaveTextContent('Not enough data for a verdict')
+})
+
+test('a record that never changes gets no verdict and no hunch line, only the nothing-to-test sentence (issue 57)', () => {
+  vi.mocked(analyze).mockReturnValue({ ...sampleResult, mkP: 1, ci95: [0, 0], slopePerDecade: 0 })
+  const zeros: Series = { ...sampleSeries, values: sampleSeries.values.map(() => 0) }
+  render(
+    <VerdictView variable={sampleCatalog[0]} placeName="Sahel" series={zeros} deseasonalized period={null} hunch="none" regions={sampleRegions} onRestart={vi.fn()} />,
+  )
+  expect(screen.getByText('Every month in this record is 0 °C, so there is no trend to test.')).toBeInTheDocument()
+  expect(screen.queryByText(/stayed within its normal ups and downs/)).toBeNull()
+  expect(screen.queryByText(/Your hunch/)).toBeNull()
 })

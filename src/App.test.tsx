@@ -9,7 +9,7 @@ vi.mock('./stats', async () => ({
   countValid: vi.fn(() => 180),
   deseasonalize: vi.fn(() => []),
   // The real period functions (issue 46); only analyze and countValid are stubbed.
-  ...(({ selectableYears, validPeriod, slicePeriod }) => ({ selectableYears, validPeriod, slicePeriod }))(
+  ...(({ selectableYears, validPeriod, slicePeriod, isConstant }) => ({ selectableYears, validPeriod, slicePeriod, isConstant }))(
     await vi.importActual<typeof import('./stats')>('./stats'),
   ),
 }))

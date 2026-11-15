@@ -5,6 +5,7 @@ import {
   analyze,
   countValid,
   deseasonalize,
+  isConstant,
   mannKendallP,
   monthIndex,
   olsSlopeCi,
@@ -248,5 +249,17 @@ describe("custom period (issue 46)", () => {
         .toEqual(analyze(direct, toggle));
     }
     expect(analyze(s, true)!.n).toBe(192);
+  });
+});
+
+// Issue 57: snowfall in the Sahel is 0 in every month, so there is nothing to test.
+describe("isConstant", () => {
+  test("true when every valued month has the same value, ignoring missing months", () => {
+    expect(isConstant(makeSeries([0, 0, null, 0]))).toBe(true);
+    expect(isConstant(makeSeries([2.5, 2.5]))).toBe(true);
+  });
+  test("false when any two valued months differ, or when no month has a value", () => {
+    expect(isConstant(makeSeries([0, 0, 0.1]))).toBe(false);
+    expect(isConstant(makeSeries([null, null]))).toBe(false);
   });
 });
