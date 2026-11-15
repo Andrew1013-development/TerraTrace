@@ -48,7 +48,7 @@ npm run dev
 - Tests: `npx vitest run`
 - Build and type check: `npm run build`
 
-The scripts in `scripts/` prepare data and test files; the app does not need them to run. They need Python 3:
+The scripts in `scripts/` prepare data and test files; the app does not need them to run. They need Python 3.12 or newer, because numpy and scipy require it:
 
 ```bash
 python3 -m venv .venv

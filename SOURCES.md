@@ -41,7 +41,7 @@ Versions are from `scripts/requirements.txt`; licences are from each installed p
 
 | Library | Version | Used for | Licence |
 |---|---|---|---|
-| numpy | 2.5.4 | Test series and regional means | BSD-3-Clause AND 0BSD AND MIT AND Zlib AND CC0-1.0 |
+| numpy | 2.5.4 | Test series for the stats tests | BSD-3-Clause AND 0BSD AND MIT AND Zlib AND CC0-1.0 |
 | scipy | 1.18.1 | Reference straight-line fits for the stats tests | BSD-3-Clause |
 | pymannkendall | 1.4.3 | Reference Mann-Kendall results for the stats tests | MIT |
 | pytest | 9.2.0 | Script tests | MIT |
