@@ -23,12 +23,14 @@ Versions are from `package.json`; licences are from each installed package's own
 | @observablehq/plot | 0.6.19 | ISC |
 | react | 19.3.1 | MIT |
 | react-dom | 19.3.1 | MIT |
+| three | 0.187.0 | MIT |
 | @testing-library/jest-dom | 7.0.1 | MIT |
 | @testing-library/react | 16.3.3 | MIT |
 | @testing-library/user-event | 14.6.10 | MIT |
 | @types/node | 26.6.6 | MIT |
 | @types/react | 19.3.0 | MIT |
 | @types/react-dom | 19.3.0 | MIT |
+| @types/three | 0.187.0 | MIT |
 | @vitejs/plugin-react | 6.3.0 | MIT |
 | jsdom | 31.0.1 | MIT |
 | typescript | 7.0.2 | Apache-2.0 |
