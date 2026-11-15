@@ -23,7 +23,7 @@ A guided web app that takes a student from a question about the Earth to a stati
 - No project work before 9:00 AM local on November 14. This includes the repo, code and precomputed data. The team reports that plans and `CLAUDE.md` written beforehand are acceptable; keep them out of the project repo until the start.
 - Official resources and the submission and judging guides were read on November 13. Their rules are in section 7.
 - The submission must describe how AI tools were used. AI-generated code must be acknowledged in descriptive text and metadata, and AI-generated images or video need a visible watermark. Generated content may not use NASA branding.
-- The Project Submission Guide says SI should not be used to come up with the idea for solving the challenge. See section 8.
+- The Project Submission Guide says SI should not be used to come up with the idea for solving the challenge.
 - Every source must be cited. Original content must be freely available or OSI-licensed.
 
 **Settled:** the deadline is 23:59 ICT on November 15 (HCMC online handbook). The team reports that planning beforehand is allowed.
