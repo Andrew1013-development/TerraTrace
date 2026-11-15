@@ -856,12 +856,16 @@ button.rail-step-button:hover { background: rgba(201, 210, 245, 0.12); }
 /* Scene: map on top; region and coordinates side by side below. */
 .map-card { margin-bottom: var(--space-4); }
 .world-map { margin: 0; }
-.world-map-globe { width: 100%; height: min(440px, 85vw); border-radius: var(--radius); background: radial-gradient(circle at 50% 50%, #0B2A63 0%, var(--deep-blue) 70%); overflow: hidden; }
+.world-map-globe { position: relative; width: 100%; height: min(440px, 85vw); border-radius: var(--radius); background: radial-gradient(circle at 50% 50%, #0B2A63 0%, var(--deep-blue) 70%); overflow: hidden; }
 .world-map-globe canvas { display: block; max-width: 100%; }
 /* The globe stays inside its box at every zoom: the stage clips, and the zoom buttons sit in its corner. */
 .world-map-stage { position: relative; overflow: hidden; border-radius: var(--radius); }
+/* The invisible ring that takes the globe's gestures (sized from the camera in WorldMap). */
+.globe-ring { position: absolute; z-index: 1; border-radius: 50%; cursor: grab; }
+.globe-ring:active { cursor: grabbing; }
 .zoom-buttons {
   position: absolute;
+  z-index: 2; /* above the ring, which covers the whole box when zoomed in */
   top: var(--space-2);
   right: var(--space-2);
   display: flex;

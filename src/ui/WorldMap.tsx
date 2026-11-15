@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { loadRegionShapes, type RegionShapes } from '../data'
 import { regionAt } from '../place'
 import type { Region } from '../types'
-import { densify, fitView, hasWebGL, toLatLon, toVector } from './globe'
+import { densify, fitView, hasWebGL, ringRadius, toLatLon, toVector, wheelKind } from './globe'
 
 type Box = [number, number, number, number] // [south, west, north, east]
 type Pin = { lat: number; lon: number }
@@ -40,8 +40,12 @@ async function makeGlobe(host: HTMLDivElement, onPick: (lat: number, lon: number
   const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true })
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
   renderer.setSize(host.clientWidth || 600, host.clientHeight || 420)
-  renderer.domElement.style.cursor = 'grab'
   host.append(renderer.domElement)
+  // The invisible "atmosphere": a circle 15 px wider than the globe on screen that takes every drag, pinch and
+  // scroll. Outside it the browser keeps its own behaviour, so the page still scrolls past the map.
+  const ring = document.createElement('div')
+  ring.className = 'globe-ring'
+  host.append(ring)
   // Drawn only when something changed (a move, new content, a resize), so a still globe costs no GPU time.
   let dirty = true
 
@@ -105,7 +109,8 @@ async function makeGlobe(host: HTMLDivElement, onPick: (lat: number, lon: number
   pin.visible = false
   scene.add(pin)
 
-  const controls = new OrbitControls(camera, renderer.domElement)
+  // Drag (mouse, or one finger) turns the globe; two fingers on a touch screen pinch to zoom. The wheel is ours (below).
+  const controls = new OrbitControls(camera, ring)
   controls.enablePan = false
   controls.enableDamping = true
   controls.minDistance = NEAR // never inside the globe; the canvas clips everything to the box
@@ -124,9 +129,13 @@ async function makeGlobe(host: HTMLDivElement, onPick: (lat: number, lon: number
     if (reduced) return void camera.position.copy(to.multiplyScalar(d1))
     aim = { dir, turn: new THREE.Quaternion().setFromUnitVectors(dir, to), d0: camera.position.length(), d1, start: performance.now() }
   }
+  controls.addEventListener('start', () => {
+    aim = null // the user's own move wins over a turn to a region
+  })
   // The view's narrower half-angle, with a margin so the shape doesn't touch the box's edge.
   const tanHalf = () => 0.8 * Math.tan(((camera.fov / 2) * Math.PI) / 180) * Math.min(1, camera.aspect)
 
+  let turnSpeed = 0.5
   let frame = 0
   const loop = (now: number) => {
     const animating = aim !== null
@@ -142,7 +151,16 @@ async function makeGlobe(host: HTMLDivElement, onPick: (lat: number, lon: number
     if (animating || moved || dirty) {
       // Up close: slower dragging, and dashes that shrink with the view so outlines stay readable.
       const k = (camera.position.length() - 1) / (FAR - 1)
-      controls.rotateSpeed = Math.max(0.05, 0.5 * k)
+      turnSpeed = Math.max(0.05, 0.5 * k)
+      const r = ringRadius(camera.position.length(), camera.fov, host.clientHeight)
+      Object.assign(ring.style, {
+        width: `${2 * r}px`,
+        height: `${2 * r}px`,
+        left: `${host.clientWidth / 2 - r}px`,
+        top: `${host.clientHeight / 2 - r}px`,
+      })
+      // OrbitControls scales a drag by its element's height, which is the ring's; keep the box's feel at every zoom.
+      controls.rotateSpeed = (turnSpeed * 2 * r) / host.clientHeight
       dashed.dashSize = Math.max(0.0015, 0.018 * k)
       dashed.gapSize = Math.max(0.001, 0.012 * k)
       pin.scale.setScalar(Math.max(0.04, k)) // the same size on screen at any zoom
@@ -168,8 +186,62 @@ async function makeGlobe(host: HTMLDivElement, onPick: (lat: number, lon: number
       onPick(lat, lon)
     }
   }
-  renderer.domElement.addEventListener('pointerdown', onDown)
-  renderer.domElement.addEventListener('pointerup', onUp)
+  ring.addEventListener('pointerdown', onDown)
+  ring.addEventListener('pointerup', onUp)
+
+  const zoomBy = (factor: number) => {
+    aim = null
+    camera.position.setLength(clampDistance(camera.position.length() * factor))
+    dirty = true
+  }
+  // Turns like a drag of (dx, dy) px: the globe follows the fingers.
+  const turnBy = (dx: number, dy: number) => {
+    aim = null
+    const s = new THREE.Spherical().setFromVector3(camera.position)
+    const k = (2 * Math.PI * turnSpeed) / host.clientHeight
+    s.theta -= dx * k
+    s.phi = Math.min(Math.PI - 0.01, Math.max(0.01, s.phi - dy * k))
+    camera.position.setFromSpherical(s)
+    camera.lookAt(0, 0, 0)
+    dirty = true
+  }
+
+  // Wheel events reach the ring before OrbitControls sees them (capture on the host). A pinch on a touchpad arrives
+  // as ctrl+wheel and zooms; a mouse wheel zooms; a touchpad two-finger slide turns the globe. Outside the ring
+  // nothing is handled, so the page scrolls.
+  const gesture = { kind: 'mouse' as 'mouse' | 'touchpad', last: -Infinity }
+  const onWheel = (e: WheelEvent) => {
+    if (e.target !== ring) return
+    e.preventDefault()
+    e.stopPropagation()
+    const px = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? host.clientHeight : 1
+    if (e.ctrlKey) return zoomBy(Math.exp(e.deltaY * px * 0.01))
+    // One gesture keeps its first guess, so a slide never turns into zooming half way through.
+    if (e.timeStamp - gesture.last > 300) {
+      const { wheelDeltaY } = e as WheelEvent & { wheelDeltaY?: number }
+      gesture.kind = wheelKind({ deltaX: e.deltaX, deltaY: e.deltaY, deltaMode: e.deltaMode, wheelDeltaY })
+    }
+    gesture.last = e.timeStamp
+    if (gesture.kind === 'mouse') zoomBy(Math.exp(e.deltaY * px * 0.002))
+    else turnBy(-e.deltaX * px, -e.deltaY * px)
+  }
+  host.addEventListener('wheel', onWheel, { capture: true, passive: false })
+
+  // Safari on a Mac sends a touchpad pinch as gesture events instead. On touch screens (iPhone, iPad) the same
+  // events come with a finger pinch that OrbitControls already zooms, so there they only stop the page zooming.
+  let pinchScale = 1
+  const onGestureStart = (e: Event) => {
+    e.preventDefault()
+    pinchScale = 1
+  }
+  const onGestureChange = (e: Event) => {
+    e.preventDefault()
+    const { scale } = e as Event & { scale: number }
+    if (navigator.maxTouchPoints === 0 && scale > 0) zoomBy(pinchScale / scale)
+    pinchScale = scale
+  }
+  ring.addEventListener('gesturestart', onGestureStart)
+  ring.addEventListener('gesturechange', onGestureChange)
 
   const resize = new ResizeObserver(() => {
     const w = host.clientWidth
@@ -258,8 +330,12 @@ async function makeGlobe(host: HTMLDivElement, onPick: (lat: number, lon: number
       cancelAnimationFrame(frame)
       resize.disconnect()
       controls.dispose()
-      renderer.domElement.removeEventListener('pointerdown', onDown)
-      renderer.domElement.removeEventListener('pointerup', onUp)
+      ring.removeEventListener('pointerdown', onDown)
+      ring.removeEventListener('pointerup', onUp)
+      ring.removeEventListener('gesturestart', onGestureStart)
+      ring.removeEventListener('gesturechange', onGestureChange)
+      host.removeEventListener('wheel', onWheel, { capture: true })
+      ring.remove()
       scene.traverse((o) => {
         const m = o as InstanceType<typeof THREE.Mesh>
         m.geometry?.dispose()
@@ -345,7 +421,7 @@ export function WorldMap({ regions, highlight, pin, label, onRegion }: WorldMapP
             </div>
           </div>
           <figcaption className="map-hint">
-            Drag to turn the globe, scroll or pinch to zoom. Click inside a dashed outline to pick that region.
+            Drag to turn the globe (two fingers on a touchpad); pinch or use the mouse wheel to zoom. Click inside a dashed outline to pick that region.
           </figcaption>
         </>
       )}
