@@ -55,4 +55,3 @@ One line per meaningful use of AI tools. No AI model runs in the app.
 | Rename to TerraTrace | Dev C | Claude Code | Suggested names with the team, then replaced the placeholder name "Case File" with TerraTrace in the app, the package name, its setup test and every doc | Dev C |
 | Pages base after the rename | Dev A | Claude Code | Found the blank live site after the repo rename to TerraTrace, and changed the Vite base and the live link in GEMINI.md to the new path | Dev A, Dev C |
 | Links after the rename | Dev A | Claude Code | Moved the last live link in the repo, and the live-app and repository links in issue 19, to the TerraTrace URLs | Dev A |
-| Series prefetch on the brief | Dev A, for Dev C | Claude Code | Started the series download when the Brief screen opens, from the performance audit, with a failing test first | Dev A, Dev C |
