@@ -48,6 +48,17 @@ npm run dev
 - Tests: `npx vitest run`
 - Build and type check: `npm run build`
 
+The scripts in `scripts/` prepare data and test files; the app does not need them to run. They need Python 3.12 or newer, because numpy and scipy require it:
+
+```bash
+python3 -m venv .venv
+.venv/bin/pip install -r scripts/requirements.txt
+.venv/bin/pytest scripts -v
+```
+
+- Regional series in `public/data/series/`: `.venv/bin/python scripts/precompute.py`, which calls NASA POWER and caches responses in `scripts/.cache/`
+- Statistics test series in `src/stats/fixtures.json`: `.venv/bin/python scripts/make_stats_fixtures.py`, which is seeded, so a rerun gives the same file
+
 ## AI assistance
 
 Parts of this project's code, tests and documents were written with AI assistance (Claude, by Anthropic). A developer reviews every AI-drafted change. No AI model runs in the app. Each use is listed in [AI_USE.md](AI_USE.md).
