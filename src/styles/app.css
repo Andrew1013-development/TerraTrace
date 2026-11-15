@@ -1,4 +1,4 @@
-/* Case File styles. Colours from the NASA Space Apps Brand Guidelines (updated June 25, 2026). */
+/* TerraTrace styles. Colours from the NASA Space Apps Brand Guidelines (updated June 25, 2026). */
 
 @font-face {
   font-family: "Fira Sans";
@@ -620,39 +620,36 @@ button {
   color: var(--muted);
 }
 
+/* Tablets and up: an app frame exactly the window's height. The side board (steps, then "Built for" at the
+   bottom) never moves; only the main panel scrolls. */
 @media (min-width: 768px) {
   .shell {
     display: grid;
+    min-height: 0;
+    height: 100vh;
+    height: 100dvh; /* tablets: the height left once the browser's own bars are shown */
+    overflow: hidden;
     grid-template-columns: 280px minmax(0, 1fr);
-    grid-template-rows: 1fr auto;
+    grid-template-rows: minmax(0, 1fr) auto;
     grid-template-areas: "rail panel" "foot panel";
   }
   .rail {
     grid-area: rail;
     padding: var(--space-5) var(--space-4);
+    overflow-y: auto; /* a last resort on very short windows, after the compact sizes at the end of this file */
   }
-  /* Steps stay at the top and "Built for" at the bottom of the window while a long screen scrolls. */
   .rail-inner {
-    position: sticky;
-    top: var(--space-5);
     display: flex;
     flex-direction: column;
     gap: var(--space-5);
   }
-  .panel { grid-area: panel; padding: var(--space-6); }
+  .panel { grid-area: panel; padding: var(--space-6); overflow-y: auto; }
   .built-for {
     grid-area: foot;
-    position: sticky;
-    bottom: 0;
-    z-index: 1;
     border-top: 1px solid rgba(201, 210, 245, 0.3);
   }
   .rail-strip-step,
   .rail-details summary { display: none; }
-}
-/* On a short wide window (a phone held sideways) the sticky steps and sticky footer overlap, so neither sticks. */
-@media (min-width: 768px) and (max-height: 640px) {
-  .rail-inner, .built-for { position: static; }
 }
 
 /* ===== UX pass: navigable rail, illustrations, map, tighter layouts ===== */
@@ -969,3 +966,28 @@ button.rail-step-button:hover { background: rgba(201, 210, 245, 0.12); }
 @keyframes a-shiver { 0% { transform: translateX(-1.2px); } 100% { transform: translateX(1.2px); } }
 @keyframes a-creep { from { transform: scaleY(.8); } to { transform: scaleY(1.15); } }
 @keyframes a-frost { 0%, 70% { opacity: 0; } 74% { opacity: .95; } 86%, 100% { opacity: 0; } }
+
+/* The side board on smaller tablet and laptop screens. These come last so they win over the sizes above. */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .shell { grid-template-columns: 240px minmax(0, 1fr); }
+}
+/* Laptop-height windows: a tighter side board, so all five steps and "Built for" fit without scrolling. */
+@media (min-width: 768px) and (max-height: 720px) {
+  .rail { padding: var(--space-4) var(--space-3); }
+  .rail-inner { gap: var(--space-3); }
+  .rail-step-button { min-height: 48px; padding: var(--space-1) var(--space-2); }
+  .rail-step-icon { width: 36px; height: 36px; }
+  .built-for { padding: var(--space-3) var(--space-4); }
+  .built-for img { width: 150px; }
+}
+/* Very short windows (a small laptop with the browser's bars, a tablet held sideways): smaller still. */
+@media (min-width: 768px) and (max-height: 580px) {
+  .rail-brand img { width: 36px; height: 36px; }
+  .rail-name { font-size: 1.3rem; }
+  .rail-step-button { min-height: 44px; }
+  .rail-step-icon { width: 32px; height: 32px; }
+  .rail-step-label { font-size: 0.85rem; }
+  .rail-step-value { font-size: 0.95rem; }
+  .built-for { flex-direction: row; align-items: center; gap: var(--space-3); }
+  .built-for img { width: 120px; }
+}

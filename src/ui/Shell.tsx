@@ -111,7 +111,7 @@ export function Shell({ screen, variable, placeName, hunch, furthest, onGoTo = (
         <div className="rail-inner">
           <div className="rail-brand">
             <img src={smallLogo} alt="" width={44} height={44} />
-            <span className="rail-name">Case File</span>
+            <span className="rail-name">TerraTrace</span>
             <span className="rail-strip-step">
               Step {currentIndex + 1} of 5: {STEPS[currentIndex].label}
             </span>

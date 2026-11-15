@@ -1,4 +1,4 @@
-# Case File: task cards
+# TerraTrace: task cards
 
 A card for every task. The six highest-risk tasks (B2, B3, A2, A4, A5 and C2) come first with full cards; the rest follow as shorter cards. Give a session its card together with the task in the plan. The plan holds the steps and the full test list; the architecture holds the signatures and formulas. A card adds the goal, the limits and the traps.
 
@@ -438,7 +438,7 @@ The remaining tasks are lower risk, so their cards are shorter. Each still appli
 
 **Goal:** a short, honest account of how verdicts are reached and how AI was used, for the README and the demo team.
 
-**Read:** plan Task B7; architecture sections 7.1 and 7.2; `docs/case-file-demo-drafts.md`.
+**Read:** plan Task B7; architecture sections 7.1 and 7.2; `docs/terratrace-demo-drafts.md`.
 
 **Done when:** `README.md` has the methods section, `AI_USE.md` is complete, and the demo team has both.
 

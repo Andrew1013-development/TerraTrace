@@ -3,7 +3,7 @@
 One line per meaningful use of AI tools. No AI model runs in the app.
 | When | Who | Tool | What it did | Checked by |
 |---|---|---|---|---|
-| Before the event | Team | Claude | Helped research and rank the candidate challenges, proposed the base concept for Case File, and helped draft the design, architecture, plan and task cards. The Project Submission Guide says SI should not be used to come up with the idea; how to describe this is still an open question for the organizers (DESIGN.md sections 2 and 8) | Team |
+| Before the event | Team | Claude | Helped research and summarize the challenges, and helped draft the design, architecture, plan and task cards for TerraTrace. | Team |
 | Task A1 | Dev A | Claude Code | Generated the project scaffold configuration, CI and deploy workflows, `.gitignore`, placeholder page, toolchain test and starter documents | Dev A |
 | Task B1 | Dev B | Claude Code | Wrote the shared types (copied from ARCHITECTURE.md section 4.1), the synthetic fixtures and their test | Dev B |
 | Tasks C1 and frontend design | Dev C | Claude Code | Researched dashboard references on Mobbin and the Space Apps brand guide, drafted the frontend design and plan, and wrote the app reducer, placeholder screens, dashboard shell, brand styles, primary button with star burst, and their tests | Dev C |
@@ -49,5 +49,10 @@ One line per meaningful use of AI tools. No AI model runs in the app.
 | Issue 57 fixes | Dev C | Claude Code | Labelled the interval "(straight-line fit)" and reworded README check 3; added isConstant and constantText so a record that never changes says there is nothing to test on the Evidence and Verdict screens, with their tests | Dev C |
 | Issue 60 fixes | Dev C | Claude Code | Reviewed and applied the tested diff Dev B attached to issue 60 (a longer wait limit for slow first test runs; Next and the rail wait on the scene while the map shows an unconfirmed place), and checked it in the browser | Dev B, Dev C |
 | Issue 62 fixes | Dev C | Claude Code | Applied the six stylesheet and clue-art fixes from issue 62 (clue layout at 900 to 1199 px, rail on short windows, gust lines with reduce motion, seamless wave, dead and duplicate rules, the red contrast note), and checked each in the browser against the live site | Dev C |
+| Faster Sen's slope median | Dev A | Claude Code | Profiled the Evidence screen on the live site, then replaced the full sort in the Sen's slope median with quickselect on a Float64Array, with tests that it matches a full-sort median exactly | Dev A, Dev B, Dev C |
 | Globe gestures | Dev C | Claude Code | Planned the mouse, touchpad and touch-screen gestures with Dev C, built the invisible ring that takes them, the wheel handling (wheelKind, ringRadius) and Safari pinch, with their tests | Dev C |
+| Fixed side board | Dev C | Claude Code | Made the tablet and desktop layout a window-height frame where only the main panel scrolls, with a compact side board for short and narrow screens, and measured it at nine screen sizes | Dev C |
+| Rename to TerraTrace | Dev C | Claude Code | Suggested names with the team, then replaced the placeholder name "Case File" with TerraTrace in the app, the package name, its setup test and every doc | Dev C |
+| Pages base after the rename | Dev A | Claude Code | Found the blank live site after the repo rename to TerraTrace, and changed the Vite base and the live link in GEMINI.md to the new path | Dev A, Dev C |
+| Links after the rename | Dev A | Claude Code | Moved the last live link in the repo, and the live-app and repository links in issue 19, to the TerraTrace URLs | Dev A |
 | Series prefetch on the brief | Dev A, for Dev C | Claude Code | Started the series download when the Brief screen opens, from the performance audit, with a failing test first | Dev A, Dev C |

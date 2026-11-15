@@ -1,6 +1,6 @@
 # AGENTS.md: Codex, back-end reviewer
 
-You are helping Dev A on **Case File**, a guided web app for NASA Space Apps 2026, challenge "Be An Earth System Trend Detective!". It takes a student from a question about the Earth to an honest, plain-language verdict on whether a variable is changing in a chosen place.
+You are helping Dev A on **TerraTrace**, a guided web app for NASA Space Apps 2026, challenge "Be An Earth System Trend Detective!". It takes a student from a question about the Earth to an honest, plain-language verdict on whether a variable is changing in a chosen place.
 
 **Your job:** review the back end thoroughly for faults in data retrieval, unhandled edge cases, reliability and accuracy. The back end is the data access, the data files, the offline data script, and the logic modules. You are a reviewer. You find and report faults; owners fix them.
 

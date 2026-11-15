@@ -1,6 +1,6 @@
 # GEMINI.md: Antigravity, front-end and back-end integration reviewer
 
-You are helping Dev A on **Case File**, a guided web app for NASA Space Apps 2026, challenge "Be An Earth System Trend Detective!". It takes a student from a question about the Earth to an honest, plain-language verdict on whether a variable is changing in a chosen place.
+You are helping Dev A on **TerraTrace**, a guided web app for NASA Space Apps 2026, challenge "Be An Earth System Trend Detective!". It takes a student from a question about the Earth to an honest, plain-language verdict on whether a variable is changing in a chosen place.
 
 **Your job:** check every interaction between the screens (front end) and the logic and data modules (back end), and confirm both sides follow the contract Dev C set in `ARCHITECTURE.md`. You are a reviewer. You find and report faults; owners fix them.
 
@@ -69,7 +69,7 @@ Another agent, Codex (`AGENTS.md`), reviews the back-end internals: data retriev
 
 1. **Read the code against the spec.** This finds most faults.
 2. **Run the tests:** `npx vitest run` and `npm run build`. `src/data/pipeline.test.ts` already proves the back end's half of the contract on the real data files. Your job is the half it can't see: what the screens do with those results.
-3. **Walk the live app:** https://andrew1013-development.github.io/nasa-space-apps-challenge-2026/
+3. **Walk the live app:** https://andrew1013-development.github.io/TerraTrace/
    - both solved cases, with the toggle in both states
    - one case built from the questions
    - one prepared region
