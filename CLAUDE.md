@@ -1,4 +1,4 @@
-# Case File
+# TerraTrace
 
 Guided web app for NASA Space Apps 2026, challenge "Be An Earth System Trend Detective!". Takes a student from a question about the Earth to an honest, plain-language verdict on whether a variable is changing in a chosen place.
 

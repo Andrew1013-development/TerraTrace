@@ -3,7 +3,7 @@
 One line per meaningful use of AI tools. No AI model runs in the app.
 | When | Who | Tool | What it did | Checked by |
 |---|---|---|---|---|
-| Before the event | Team | Claude | Helped research and rank the candidate challenges, proposed the base concept for Case File, and helped draft the design, architecture, plan and task cards. The Project Submission Guide says SI should not be used to come up with the idea; how to describe this is still an open question for the organizers (DESIGN.md sections 2 and 8) | Team |
+| Before the event | Team | Claude | Helped research and rank the candidate challenges, proposed the base concept for TerraTrace, and helped draft the design, architecture, plan and task cards. The Project Submission Guide says SI should not be used to come up with the idea; how to describe this is still an open question for the organizers (DESIGN.md sections 2 and 8) | Team |
 | Task A1 | Dev A | Claude Code | Generated the project scaffold configuration, CI and deploy workflows, `.gitignore`, placeholder page, toolchain test and starter documents | Dev A |
 | Task B1 | Dev B | Claude Code | Wrote the shared types (copied from ARCHITECTURE.md section 4.1), the synthetic fixtures and their test | Dev B |
 | Tasks C1 and frontend design | Dev C | Claude Code | Researched dashboard references on Mobbin and the Space Apps brand guide, drafted the frontend design and plan, and wrote the app reducer, placeholder screens, dashboard shell, brand styles, primary button with star burst, and their tests | Dev C |
@@ -52,3 +52,4 @@ One line per meaningful use of AI tools. No AI model runs in the app.
 | Faster Sen's slope median | Dev A | Claude Code | Profiled the Evidence screen on the live site, then replaced the full sort in the Sen's slope median with quickselect on a Float64Array, with tests that it matches a full-sort median exactly | Dev A, Dev B, Dev C |
 | Globe gestures | Dev C | Claude Code | Planned the mouse, touchpad and touch-screen gestures with Dev C, built the invisible ring that takes them, the wheel handling (wheelKind, ringRadius) and Safari pinch, with their tests | Dev C |
 | Fixed side board | Dev C | Claude Code | Made the tablet and desktop layout a window-height frame where only the main panel scrolls, with a compact side board for short and narrow screens, and measured it at nine screen sizes | Dev C |
+| Rename to TerraTrace | Dev C | Claude Code | Suggested names with the team, then replaced the placeholder name "Case File" with TerraTrace in the app, the package name, its setup test and every doc | Dev C |
