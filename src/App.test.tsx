@@ -114,13 +114,27 @@ test('a solved case opens straight at the brief', async () => {
   await expectScreen('Case brief')
 })
 
+// A typed point's POWER call takes seconds: it starts while the student reads the brief, not after the hunch.
+// getSeries caches the request, so pressing "Yes, show me the evidence" reuses it. Nothing is shown early.
+test('the brief starts loading the series before the hunch', async () => {
+  const { getSeries } = await import('./data')
+  vi.mocked(getSeries).mockClear()
+  const user = userEvent.setup()
+  render(<App />)
+  await user.click(await screen.findByRole('button', { name: 'Synthetic demo' }))
+  await expectScreen('Case brief')
+  expect(getSeries).toHaveBeenCalledWith(expect.objectContaining({ id: 'T2M' }), { kind: 'region', id: 'sahel' })
+  expect(screen.queryByRole('figure', { name: 'chart' })).not.toBeInTheDocument()
+})
+
 // Integration report, defect 1.
 test('a failed series load offers a way back to the scene, and a second try works', async () => {
   const { getSeries } = await import('./data')
   const error = Object.assign(new Error("We couldn't load this region's data. Check your connection, then choose the region again."), {
     kind: 'network' as const,
   })
-  vi.mocked(getSeries).mockRejectedValueOnce(error)
+  // Twice: the brief's early load and the evidence load both fail, as in a real outage.
+  vi.mocked(getSeries).mockRejectedValueOnce(error).mockRejectedValueOnce(error)
   const user = userEvent.setup()
   render(<App />)
   const toEvidence = async () => {
