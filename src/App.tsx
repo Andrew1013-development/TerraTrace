@@ -122,6 +122,7 @@ export default function App() {
   const [state, dispatch] = useReducer(caseReducer, initialState)
   const [files, setFiles] = useState<CaseFiles | DataError>()
   const [attempt, setAttempt] = useState(0)
+  const [sceneChanged, setSceneChanged] = useState(false) // the scene shows a place not yet confirmed
   const { variable, place } = state
   const loading = state.load.status === 'loading'
 
@@ -152,7 +153,7 @@ export default function App() {
       variable={state.variable}
       placeName={state.place && placeName(state.place, regions)}
       hunch={state.hunch}
-      furthest={furthestStep(state)}
+      furthest={state.screen === 'scene' && sceneChanged ? 1 : furthestStep(state)}
       onGoTo={(screen) => dispatch({ type: 'goTo', screen })}
     >
       {files === undefined && <p role="status">Loading the case files…</p>}
@@ -172,14 +173,19 @@ export default function App() {
           </button>
         </>
       )}
-      {files && !(files instanceof Error) && <CurrentScreen state={state} dispatch={dispatch} files={files} />}
+      {files && !(files instanceof Error) && <CurrentScreen state={state} dispatch={dispatch} files={files} onSceneChanged={setSceneChanged} />}
     </Shell>
   )
 }
 
-type ScreenProps = { state: CaseState; dispatch: (e: CaseEvent) => void; files: CaseFiles }
+type ScreenProps = {
+  state: CaseState
+  dispatch: (e: CaseEvent) => void
+  files: CaseFiles
+  onSceneChanged: (changed: boolean) => void
+}
 
-function CurrentScreen({ state, dispatch, files: { catalog, regions, leads } }: ScreenProps) {
+function CurrentScreen({ state, dispatch, files: { catalog, regions, leads }, onSceneChanged }: ScreenProps) {
   switch (state.screen) {
     case 'clues':
       return (
@@ -203,6 +209,7 @@ function CurrentScreen({ state, dispatch, files: { catalog, regions, leads } }: 
           leads={leads}
           place={state.place}
           onPick={(place) => dispatch({ type: 'pickPlace', place })}
+          onChanged={onSceneChanged}
         />
       )
     case 'brief':
