@@ -137,6 +137,12 @@ export default function App() {
     }
   }, [attempt])
 
+  // Start the download while the student reads the brief: a typed point's POWER call takes seconds. getSeries
+  // caches the request, so the load below reuses it; a failure is dropped from the cache and retried there.
+  useEffect(() => {
+    if (state.screen === 'brief' && variable && place) getSeries(variable, place).catch(() => {})
+  }, [state.screen, variable, place])
+
   useEffect(() => {
     if (!loading || !variable || !place) return
     getSeries(variable, place).then(
