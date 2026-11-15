@@ -54,3 +54,4 @@ One line per meaningful use of AI tools. No AI model runs in the app.
 | Fixed side board | Dev C | Claude Code | Made the tablet and desktop layout a window-height frame where only the main panel scrolls, with a compact side board for short and narrow screens, and measured it at nine screen sizes | Dev C |
 | Rename to TerraTrace | Dev C | Claude Code | Suggested names with the team, then replaced the placeholder name "Case File" with TerraTrace in the app, the package name, its setup test and every doc | Dev C |
 | Pages base after the rename | Dev A | Claude Code | Found the blank live site after the repo rename to TerraTrace, and changed the Vite base and the live link in GEMINI.md to the new path | Dev A, Dev C |
+| Links after the rename | Dev A | Claude Code | Moved the last live link in the repo, and the live-app and repository links in issue 19, to the TerraTrace URLs | Dev A |
