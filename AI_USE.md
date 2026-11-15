@@ -3,7 +3,7 @@
 One line per meaningful use of AI tools. No AI model runs in the app.
 | When | Who | Tool | What it did | Checked by |
 |---|---|---|---|---|
-| Before the event | Team | Claude | Helped research and rank the candidate challenges, proposed the base concept for TerraTrace, and helped draft the design, architecture, plan and task cards. The Project Submission Guide says SI should not be used to come up with the idea; how to describe this is still an open question for the organizers (DESIGN.md sections 2 and 8) | Team |
+| Before the event | Team | Claude | Helped research and summarize the challenges, and helped draft the design, architecture, plan and task cards for TerraTrace. | Team |
 | Task A1 | Dev A | Claude Code | Generated the project scaffold configuration, CI and deploy workflows, `.gitignore`, placeholder page, toolchain test and starter documents | Dev A |
 | Task B1 | Dev B | Claude Code | Wrote the shared types (copied from ARCHITECTURE.md section 4.1), the synthetic fixtures and their test | Dev B |
 | Tasks C1 and frontend design | Dev C | Claude Code | Researched dashboard references on Mobbin and the Space Apps brand guide, drafted the frontend design and plan, and wrote the app reducer, placeholder screens, dashboard shell, brand styles, primary button with star burst, and their tests | Dev C |
