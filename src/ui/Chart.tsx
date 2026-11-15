@@ -61,7 +61,7 @@ export function Chart({ series, deseasonalized, fit = true, children }: ChartPro
   }, [series, deseasonalized, yLabel, width, fit])
 
   return (
-    <figure className="chart-card underline-host">
+    <figure className="chart-card">
       <div ref={ref} className="chart" role="img" aria-label={label} />
       {fit && (
         <figcaption>
