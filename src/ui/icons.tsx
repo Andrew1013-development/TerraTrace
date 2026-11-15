@@ -1,4 +1,4 @@
-// Small line icons drawn for Case File (24 × 24, stroke = currentColor). Decorative: always aria-hidden.
+// Small line icons drawn for TerraTrace (24 × 24, stroke = currentColor). Decorative: always aria-hidden.
 import type { ReactNode } from 'react'
 
 function Icon({ children, size = 24 }: { children: ReactNode; size?: number }) {
