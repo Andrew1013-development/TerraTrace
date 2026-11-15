@@ -163,3 +163,22 @@ test('the rail and Previous/Next move between steps without losing answers', asy
   await user.click(within(steps).getByRole('button', { name: 'Previous' }))
   await expectScreen('Case brief')
 })
+
+test('Next waits on the scene while the map shows a place that is not confirmed', async () => {
+  const user = userEvent.setup()
+  render(<App />)
+  await user.click(await screen.findByRole('button', { name: 'air temperature' }))
+  await expectScreen('Pick the scene')
+  await user.selectOptions(screen.getByRole('combobox', { name: 'Prepared region' }), 'Sahel')
+  await user.click(screen.getByRole('button', { name: 'Use this region' }))
+  await expectScreen('Case brief')
+
+  await user.click(screen.getByRole('button', { name: /Previous/ }))
+  await expectScreen('Pick the scene')
+  const next = screen.getByRole('button', { name: /Next/ })
+  expect(next).toBeEnabled()
+  await user.selectOptions(screen.getByRole('combobox', { name: 'Prepared region' }), 'Arctic Canada')
+  expect(next).toBeDisabled()
+  await user.selectOptions(screen.getByRole('combobox', { name: 'Prepared region' }), 'Sahel')
+  expect(next).toBeEnabled()
+})

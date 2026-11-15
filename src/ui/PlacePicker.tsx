@@ -12,6 +12,8 @@ type PlacePickerProps = {
   leads: Lead[]
   place?: Place // a place already chosen, when the user comes back to this step
   onPick: (place: Place) => void
+  // true while the map shows a valid place other than the saved one, so Next and the rail wait for a confirm button
+  onChanged?: (changed: boolean) => void
 }
 
 const COORD_ERROR = 'Enter a latitude from -90 to 90 and a longitude from -180 to 180.'
@@ -24,7 +26,7 @@ function spotName(lat: number, lon: number, countries: Countries | null | undefi
   return country ? `one spot in ${country}` : 'one spot at sea'
 }
 
-export function PlacePicker({ variable, regions, leads, place, onPick }: PlacePickerProps) {
+export function PlacePicker({ variable, regions, leads, place, onPick, onChanged }: PlacePickerProps) {
   const [regionId, setRegionId] = useState(place?.kind === 'region' ? place.id : '')
   const [lat, setLat] = useState(place?.kind === 'point' ? String(place.lat) : '')
   const [lon, setLon] = useState(place?.kind === 'point' ? String(place.lon) : '')
@@ -42,6 +44,13 @@ export function PlacePicker({ variable, regions, leads, place, onPick }: PlacePi
   const listRegion = regions.find((r) => r.id === regionId)
   const shown = mode === 'point' ? pointRegion : listRegion
   const regionLeads = shown ? leadsFor(leads, shown.id, variable.id) : []
+  const changed =
+    mode === 'region'
+      ? !!listRegion && !(place?.kind === 'region' && place.id === listRegion.id)
+      : !!point && !(place?.kind === 'point' && place.lat === point.lat && place.lon === point.lon)
+
+  useEffect(() => onChanged?.(changed), [changed, onChanged])
+  useEffect(() => () => onChanged?.(false), [onChanged]) // leaving the scene clears it
 
   useEffect(() => {
     let live = true
