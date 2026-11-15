@@ -41,16 +41,46 @@ export function deseasonalize(series: Series): (number | null)[] {
   });
 }
 
-function median(xs: number[]): number {
-  const s = [...xs].sort((a, b) => a - b);
-  const mid = Math.floor(s.length / 2);
-  return s.length % 2 ? s[mid] : (s[mid - 1] + s[mid]) / 2;
+// The k-th smallest value of a (0-based), by Hoare quickselect, reordering a in place. Afterwards every value
+// before index k is <= a[k]. Average O(n), where a full sort is O(n log n): 540 months give 145,530 slopes.
+function select(a: Float64Array, k: number): number {
+  let lo = 0;
+  let hi = a.length - 1;
+  while (lo < hi) {
+    const pivot = a[(lo + hi) >> 1];
+    let i = lo;
+    let j = hi;
+    while (i <= j) {
+      while (a[i] < pivot) i++;
+      while (a[j] > pivot) j--;
+      if (i <= j) {
+        const x = a[i];
+        a[i++] = a[j];
+        a[j--] = x;
+      }
+    }
+    if (k <= j) hi = j;
+    else if (k >= i) lo = i;
+    else break; // a[j + 1 .. i - 1] all equal the pivot, and k is among them
+  }
+  return a[k];
+}
+
+// Same value as sorting and taking the middle, without the sort.
+function median(xs: Float64Array): number {
+  const mid = xs.length >> 1;
+  const upper = select(xs, mid);
+  if (xs.length % 2) return upper;
+  let lower = -Infinity; // the largest value before mid
+  for (let i = 0; i < mid; i++) if (xs[i] > lower) lower = xs[i];
+  return (lower + upper) / 2;
 }
 
 export function senSlopePerMonth(t: number[], y: number[]): number {
-  const slopes: number[] = [];
+  const slopes = new Float64Array((y.length * (y.length - 1)) / 2);
+  let k = 0;
   for (let i = 0; i < y.length; i++) {
-    for (let j = i + 1; j < y.length; j++) slopes.push((y[j] - y[i]) / (t[j] - t[i]));
+    for (let j = i + 1; j < y.length; j++) slopes[k++] = (y[j] - y[i]) / (t[j] - t[i]);
   }
   return slopes.length ? median(slopes) : 0;
 }
