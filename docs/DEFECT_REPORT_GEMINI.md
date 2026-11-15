@@ -2,7 +2,7 @@
 
 - **Reviewer:** Claude Code, standing in for Antigravity, following `GEMINI.md`
 - **Commit reviewed:** `fc5e7b2` on `main`, 2026-11-15. The custom period work in `6d419bc` was not reviewed; the UI on `main` does not call it yet.
-- **Live app:** https://andrew1013-development.github.io/nasa-space-apps-challenge-2026/ (the bundle includes the D16 and D17 fixes)
+- **Live app:** https://andrew1013-development.github.io/TerraTrace/ (the bundle includes the D16 and D17 fixes)
 - **Baseline:** `npx vitest run --dir src` gives 22 files and 195 tests passing; `npm run build` passes.
 - **Nothing here has been fixed.** Owners: write a failing test first, then fix, in a new PR.
 
