@@ -239,8 +239,8 @@ function Art({ name }: { name: ArtName }) {
       return (
         <Svg>
           <g className="a-wave" stroke="#0960E1" strokeWidth="7" strokeLinecap="round" fill="none">
-            <path d="M-20 52c15-12 25-12 40 0s25 12 40 0 25-12 40 0 25 12 40 0" />
-            <path d="M-20 76c15-12 25-12 40 0s25 12 40 0 25-12 40 0 25 12 40 0" opacity=".6" />
+            <path d="M-100 52c15-12 25-12 40 0s25 12 40 0 25-12 40 0 25 12 40 0 25-12 40 0 25 12 40 0" />
+            <path d="M-100 76c15-12 25-12 40 0s25 12 40 0 25-12 40 0 25 12 40 0 25-12 40 0 25 12 40 0" opacity=".6" />
           </g>
         </Svg>
       )
