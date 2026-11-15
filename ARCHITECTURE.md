@@ -1,4 +1,4 @@
-# Case File: architecture
+# TerraTrace: architecture
 
 The build reference for all three developers and their Claude sessions. The spec says what and why. The plan says who does what, when. This file says exactly how the parts fit, so a session can build one part without reading the others.
 
@@ -8,7 +8,7 @@ The build reference for all three developers and their Claude sessions. The spec
 
 ## 1. System at a glance
 
-Case File is a static web app: files on GitHub Pages, no server of ours, no accounts, no AI model at runtime.
+TerraTrace is a static web app: files on GitHub Pages, no server of ours, no accounts, no AI model at runtime.
 
 ```text
  Browser

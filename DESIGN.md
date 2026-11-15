@@ -1,4 +1,4 @@
-# Case File: design spec
+# TerraTrace: design spec
 
 NASA Space Apps Challenge 2026, challenge "Be An Earth System Trend Detective!"
 Event: November 14-15, 2026. Team: 6 people on the online track of the Ho Chi Minh City event. 3 full-stack developers, same room, 16 build hours each, and 3 non-dev teammates who own the demo and submission.
@@ -59,7 +59,7 @@ A guided web app that takes a student from a question about the Earth to a stati
 
 **Stack:** Vite, React, TypeScript, Observable Plot. Python with xarray for the one-time data script. Hosted on GitHub Pages. Licence: Apache-2.0.
 
-The full build reference is `docs/case-file-architecture.md`: every signature, formula, message and screen.
+The full build reference is `docs/terratrace-architecture.md`: every signature, formula, message and screen.
 
 | Part | Job | Owner |
 |---|---|---|
@@ -156,7 +156,7 @@ Significance level: 0.05.
 
 ### Before the start
 
-Done on November 13: the resources and guides were read, and the team stayed with Case File. Still open: the organizers' answer on describing AI help (section 2).
+Done on November 13: the resources and guides were read, and the team stayed with TerraTrace. Still open: the organizers' answer on describing AI help (section 2).
 
 ### Schedule (build hours)
 
@@ -277,7 +277,7 @@ Owned by the 3 non-dev teammates. Developers supply the live link, facts and num
 - The guides state no weights for the five judging criteria; each is scored 1 to 5.
 - Whether `github.io` pages pass the judges' web filter is unchecked. The guide suggests a FortiGuard classification request for new websites.
 - AI helped rank the challenges and propose the base concept, which may conflict with the SI rule in section 2. The team must describe this truthfully and should ask the organizers.
-- Rubric scores behind choosing Case File are judgment. Its lead over Slip Calendar is 3 points.
+- Rubric scores behind choosing TerraTrace are judgment. Its lead over Slip Calendar is 3 points.
 - Giovanni, AppEEARS and Hydrology Time Series access is untested. POWER is not on the official resource list.
 - Whether Observable Plot renders in the test environment is unverified.
 - Regional means come from 9 sampled points per region, which is coarse. POWER coverage near the poles is unverified.

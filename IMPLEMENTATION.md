@@ -1,4 +1,4 @@
-# Case File Implementation Plan
+# TerraTrace Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
@@ -8,9 +8,9 @@
 
 **Tech Stack:** Vite, React, TypeScript, Vitest, React Testing Library, Observable Plot. Python, pytest, requests, numpy, scipy, pyMannKendall.
 
-**Spec:** `docs/superpowers/specs/2026-11-04-case-file-design.md`
+**Spec:** `docs/superpowers/specs/2026-11-04-terratrace-design.md`
 
-**Architecture reference:** `docs/case-file-architecture.md`. Every signature, formula, message and screen is defined there. Tasks below name the sections to read.
+**Architecture reference:** `docs/terratrace-architecture.md`. Every signature, formula, message and screen is defined there. Tasks below name the sections to read.
 
 ## Global Constraints
 
@@ -93,14 +93,14 @@ Until a module lands, the UI builds against its stub and `src/fixtures/`.
 **Prompt to start a task**
 
 ```text
-Read CLAUDE.md. Do task <ID> from docs/superpowers/plans/2026-11-04-case-file.md.
-Read only these parts of docs/case-file-architecture.md: section 2 and <sections the task names>.
+Read CLAUDE.md. Do task <ID> from docs/superpowers/plans/2026-11-04-terratrace.md.
+Read only these parts of docs/terratrace-architecture.md: section 2 and <sections the task names>.
 Follow the task's steps in order: stub, failing tests, code, run the tests.
 Change only the files the task lists. Do not change src/types.ts or any signature.
 If a test in the plan looks wrong, or you fail twice on the same problem, stop and tell me.
 ```
 
-**Task card:** every task has a card in `docs/case-file-task-cards.md`: goal, done criteria, known traps and what not to do. Give the session its card along with the task.
+**Task card:** every task has a card in `docs/terratrace-task-cards.md`: goal, done criteria, known traps and what not to do. Give the session its card along with the task.
 
 ### Merge gate
 
@@ -171,7 +171,7 @@ Commit:   <short hash on main>
 
 ### Task A1: Repo, CI and deploy (H0-H1)
 
-**Files:** Vite `react-ts` scaffold, `.github/workflows/ci.yml`, `.github/workflows/deploy.yml`, `LICENSE`, `SOURCES.md`, `AI_USE.md`, `README.md`, `CLAUDE.md` (copied from `docs/case-file-CLAUDE.md`), `docs/`
+**Files:** Vite `react-ts` scaffold, `.github/workflows/ci.yml`, `.github/workflows/deploy.yml`, `LICENSE`, `SOURCES.md`, `AI_USE.md`, `README.md`, `CLAUDE.md` (copied from `docs/terratrace-CLAUDE.md`), `docs/`
 
 **Read:** architecture section 3.
 

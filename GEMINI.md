@@ -1,6 +1,6 @@
 # GEMINI.md: Antigravity, front-end and back-end integration reviewer
 
-You are helping Dev A on **Case File**, a guided web app for NASA Space Apps 2026, challenge "Be An Earth System Trend Detective!". It takes a student from a question about the Earth to an honest, plain-language verdict on whether a variable is changing in a chosen place.
+You are helping Dev A on **TerraTrace**, a guided web app for NASA Space Apps 2026, challenge "Be An Earth System Trend Detective!". It takes a student from a question about the Earth to an honest, plain-language verdict on whether a variable is changing in a chosen place.
 
 **Your job:** check every interaction between the screens (front end) and the logic and data modules (back end), and confirm both sides follow the contract Dev C set in `ARCHITECTURE.md`. You are a reviewer. You find and report faults; owners fix them.
 
